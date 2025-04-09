@@ -4,8 +4,10 @@ package creditenquiry;
 
 option go_package = "go-loan-service-v3/proto";
 
+import "validate/validate.proto";
+
 message CreditEnquiryRequest {
-    bytes request_id = 1;  // UUID v4
+    bytes request_id = 1 [(validate.rules).bytes = {ignore_empty: true, len: 16}];  // UUID v4
     string enquiry_state = 2;
     string application_number = 3;
     double loan_amount = 4;

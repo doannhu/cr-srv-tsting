@@ -7,6 +7,7 @@
 package proto
 
 import (
+	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"
@@ -193,10 +194,10 @@ var File_proto_credit_enquiry_proto protoreflect.FileDescriptor
 
 const file_proto_credit_enquiry_proto_rawDesc = "" +
 	"\n" +
-	"\x1aproto/credit_enquiry.proto\x12\rcreditenquiry\"\x92\x04\n" +
-	"\x14CreditEnquiryRequest\x12\x1d\n" +
+	"\x1aproto/credit_enquiry.proto\x12\rcreditenquiry\x1a\x17validate/validate.proto\"\x9d\x04\n" +
+	"\x14CreditEnquiryRequest\x12(\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\fR\trequestId\x12#\n" +
+	"request_id\x18\x01 \x01(\fB\t\xfaB\x06z\x04h\x10p\x01R\trequestId\x12#\n" +
 	"\renquiry_state\x18\x02 \x01(\tR\fenquiryState\x12-\n" +
 	"\x12application_number\x18\x03 \x01(\tR\x11applicationNumber\x12\x1f\n" +
 	"\vloan_amount\x18\x04 \x01(\x01R\n" +
