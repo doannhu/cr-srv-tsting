@@ -100,6 +100,16 @@ func TestRedisRepository_SaveRequest_CompareRequests(t *testing.T) {
 			setupCache:    false,
 			expectedError: "",
 		},
+		{
+			name:        "invalid UUID",
+			existingReq: nil,
+			incomingReq: &creditEnquiryProto.CreditEnquiryRequest{
+				RequestId:    []byte("invalid-uuid"),
+				EnquiryState: "NEW",
+			},
+			setupCache:    false,
+			expectedError: "invalid request ID: invalid UUID (got 12 bytes)",
+		},
 	}
 
 	for _, tt := range tests {
