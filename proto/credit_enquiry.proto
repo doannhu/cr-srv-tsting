@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package creditenquiry;
+
+import "github.com/envoyproxy/protoc-gen-validate/validate/validate.proto";
+
+option go_package = "go-loan-service-v3/proto";
+
+message CreditEnquiryRequest {
+    bytes request_id = 1 [(validate.rules).bytes = {ignore_empty: true, len: 16}];  // UUID v4
+    string enquiry_state = 2;
+    string application_number = 3;
+    double loan_amount = 4;
+    string loan_purpose = 5;
+    int64 initial_structure_term_month = 6;
+    double total_monthly_net_income_amount = 7;
+    double total_annual_gross_income = 8;
+    double total_savings_amount = 9;
+    double total_number_of_continuing_home_loans = 10;
+} 
