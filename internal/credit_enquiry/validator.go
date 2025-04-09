@@ -17,17 +17,22 @@ const (
 	maxLoanAmount              = 999999999
 )
 
-type Validator struct {
+// Validator interface defines the contract for request validation
+type Validator interface {
+	ValidateRequest(request *proto.CreditEnquiryRequest) error
+}
+
+type validator struct {
 	logger *log.Logger
 }
 
-func NewValidator(logger *log.Logger) *Validator {
-	return &Validator{
+func NewValidator(logger *log.Logger) Validator {
+	return &validator{
 		logger: logger,
 	}
 }
 
-func (v *Validator) ValidateRequest(req *proto.CreditEnquiryRequest) error {
+func (v *validator) ValidateRequest(req *proto.CreditEnquiryRequest) error {
 	if err := v.validateUUID(req.RequestId); err != nil {
 		v.logger.Printf("UUID validation failed: %v", err)
 		return err
@@ -46,7 +51,7 @@ func (v *Validator) ValidateRequest(req *proto.CreditEnquiryRequest) error {
 	return nil
 }
 
-func (v *Validator) validateUUID(id []byte) error {
+func (v *validator) validateUUID(id []byte) error {
 	if len(id) != 16 {
 		return errors.New("invalid UUID length")
 	}
@@ -63,7 +68,7 @@ func (v *Validator) validateUUID(id []byte) error {
 	return nil
 }
 
-func (v *Validator) validateStringLengths(req *proto.CreditEnquiryRequest) error {
+func (v *validator) validateStringLengths(req *proto.CreditEnquiryRequest) error {
 	if len(req.EnquiryState) > maxEnquiryStateLength {
 		return fmt.Errorf("enquiry state exceeds maximum length of %d", maxEnquiryStateLength)
 	}
@@ -79,7 +84,7 @@ func (v *Validator) validateStringLengths(req *proto.CreditEnquiryRequest) error
 	return nil
 }
 
-func (v *Validator) validateNumericFields(req *proto.CreditEnquiryRequest) error {
+func (v *validator) validateNumericFields(req *proto.CreditEnquiryRequest) error {
 	if req.LoanAmount <= 0 || req.LoanAmount > maxLoanAmount {
 		return fmt.Errorf("loan amount must be positive and less than %d", maxLoanAmount)
 	}
