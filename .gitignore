@@ -31,3 +31,24 @@ go.work
 .Trashes
 ehthumbs.db
 Thumbs.db 
+
+# Text files
+*.txt
+
+# Credentials and sensitive files
+key.json
+*.key.json
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+credentials*.json
+*.tfvars
+*.tfvars.json
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.log
