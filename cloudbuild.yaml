@@ -1,0 +1,14 @@
+steps:
+  # Execute the seed script
+  - name: 'gcr.io/cloud-builders/gcloud'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud spanner databases execute-sql $${_SPANNER_DATABASE} \
+          --instance=$${_SPANNER_INSTANCE} \
+          --sql-file=scripts/seed_credit_enquiry.sql
+
+substitutions:
+  _SPANNER_INSTANCE: 'credit-enquiry-spanner-instance'
+  _SPANNER_DATABASE: 'credit-enquiry-db' 

@@ -36,32 +36,59 @@ resource "google_spanner_database" "credit_enquiry_db" {
   ]
 }
 
-resource "null_resource" "seed_credit_enquiry" {
-  count = var.seed_data ? 1 : 0
+resource "google_storage_bucket" "seed_scripts" {
+  name     = "${var.project}-seed-scripts"
+  location = var.region
 
-  provisioner "local-exec" {
-    command = <<EOT
-    gcloud spanner databases execute-sql ${google_spanner_database.credit_enquiry_db.name} \
-      --instance=${google_spanner_instance.spanner_instance.name} \
-      --sql="INSERT INTO credit_enquiry (
-        credit_enquiry_id,
-        credit_enquiry_version,
-        enquiry_state,
-        application_number,
-        application_start_time,
-        created_time,
-        updated_time
-      ) VALUES (
-        'ce-1234',
-        'v1',
-        'OPEN',
-        'app-9876',
-        CURRENT_TIMESTAMP(),
-        CURRENT_TIMESTAMP(),
-        CURRENT_TIMESTAMP()
-      );"
-    EOT
+  labels = {
+    environment = var.environment
+    managed-by  = "terraform"
+    purpose     = "seed-scripts"
+  }
+}
+
+resource "google_storage_bucket_object" "seed_script" {
+  name   = "seed_credit_enquiry.sql"
+  bucket = google_storage_bucket.seed_scripts.name
+  source = "scripts/seed_credit_enquiry.sql"
+}
+
+resource "google_cloudfunctions_function" "seed_function" {
+  name        = "seed-credit-enquiry-${var.environment}"
+  runtime     = "python39"
+  entry_point = "seed_data"
+  
+  source_archive_bucket = google_storage_bucket.seed_scripts.name
+  source_archive_object = google_storage_bucket_object.seed_script.name
+  
+  environment_variables = {
+    SPANNER_INSTANCE = google_spanner_instance.spanner_instance.name
+    SPANNER_DATABASE = google_spanner_database.credit_enquiry_db.name
+    ENVIRONMENT      = var.environment
   }
 
-  depends_on = [google_spanner_database.credit_enquiry_db]
+  labels = {
+    environment = var.environment
+    managed-by  = "terraform"
+    purpose     = "seed-data"
+  }
+}
+
+resource "google_cloudbuild_trigger" "seed_trigger" {
+  name        = "seed-credit-enquiry-${var.environment}"
+  description = "Trigger to seed credit enquiry data in ${var.environment} environment"
+  
+  github {
+    owner = var.github_owner
+    name  = var.github_repo
+    push {
+      branch = "^${var.github_branch}$"
+    }
+  }
+  
+  filename = "cloudbuild.yaml"
+
+  substitutions = {
+    _ENVIRONMENT = var.environment
+  }
 }

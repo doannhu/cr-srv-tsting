@@ -45,11 +45,11 @@ variable "display_name" {
 
 variable "node_count" {
   type        = number
-  description = "Number of Spanner nodes. Must be at least 1 and no more than 3"
+  description = "Number of Spanner nodes. Must be at least 1 and no more than 30"
   default     = 1
   validation {
-    condition     = var.node_count >= 1 && var.node_count <= 3
-    error_message = "Node count must be between 1 and 3."
+    condition     = var.node_count >= 1 && var.node_count <= 30
+    error_message = "Node count must be between 1 and 30."
   }
 }
 
@@ -76,4 +76,34 @@ variable "environment" {
     condition     = contains(["dev", "staging", "prod"], var.environment)
     error_message = "Environment must be one of: dev, staging, prod."
   }
+}
+
+variable "github_owner" {
+  type        = string
+  description = "GitHub repository owner/organization name"
+  default     = "your-org"
+}
+
+variable "github_repo" {
+  type        = string
+  description = "GitHub repository name"
+  default     = "your-repo"
+}
+
+variable "github_branch" {
+  type        = string
+  description = "GitHub branch to trigger Cloud Build on"
+  default     = "main"
+}
+
+variable "spanner_instance" {
+  type        = string
+  description = "Name of the Spanner instance for Cloud Build"
+  default     = "credit-enquiry-spanner-instance"
+}
+
+variable "spanner_database" {
+  type        = string
+  description = "Name of the Spanner database for Cloud Build"
+  default     = "credit-enquiry-db"
 }
