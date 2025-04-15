@@ -1,18 +1,19 @@
 variable "project" {
   type        = string
-  description = "Google Cloud project ID where the Spanner instance will be created"
+  description = "The GCP project ID"
   validation {
     condition     = length(var.project) > 0
-    error_message = "Project ID cannot be empty."
+    error_message = "Project ID must not be empty."
   }
 }
 
 variable "region" {
   type        = string
-  description = "Google Cloud region for the Spanner instance. Must be 'regional-australia-southeast'"
+  description = "The GCP region"
+  default     = "australia-southeast1"
   validation {
-    condition     = var.region == "regional-australia-southeast"
-    error_message = "Only 'regional-australia-southeast' is allowed for the region."
+    condition     = var.region == "australia-southeast1"
+    error_message = "Region must be australia-southeast1."
   }
 }
 
@@ -81,19 +82,19 @@ variable "environment" {
 variable "github_owner" {
   type        = string
   description = "GitHub repository owner/organization name"
-  default     = "your-org"
+  default     = "doannhu"
 }
 
 variable "github_repo" {
   type        = string
   description = "GitHub repository name"
-  default     = "your-repo"
+  default     = "cr-srv-tsting"
 }
 
 variable "github_branch" {
   type        = string
   description = "GitHub branch to trigger Cloud Build on"
-  default     = "main"
+  default     = "grpc-server-dev-terraform-best-prac"
 }
 
 variable "spanner_instance" {
@@ -106,4 +107,28 @@ variable "spanner_database" {
   type        = string
   description = "Name of the Spanner database for Cloud Build"
   default     = "credit-enquiry-db"
+}
+
+# Service account variables
+variable "cloud_functions_service_account" {
+  description = "Service account email for Cloud Functions"
+  type        = string
+  default     = "terraform-cloudfunctions@p77133-py-bigquery-cloud-run.iam.gserviceaccount.com"
+}
+
+variable "cloud_build_service_account" {
+  description = "Service account email for Cloud Build"
+  type        = string
+  default     = "terraform-cloudbuild@p77133-py-bigquery-cloud-run.iam.gserviceaccount.com"
+}
+
+variable "storage_service_account" {
+  description = "Service account email for Cloud Storage"
+  type        = string
+  default     = "terraform-storage@p77133-py-bigquery-cloud-run.iam.gserviceaccount.com"
+}
+
+variable "project_id" {
+  description = "The GCP project ID"
+  type        = string
 }
