@@ -9,26 +9,37 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	pb "go-loan-service-v3/proto"
 
+	"github.com/google/uuid"
 	"google.golang.org/grpc"
 )
 
 // CreditEnquiryServer implements the gRPC service for credit enquiries
 type CreditEnquiryServer struct {
 	pb.UnimplementedCreditEnquiryServiceServer
-	validator credit_enquiry.Validator
-	repo      entity.RequestCacheRepository
+	validator   credit_enquiry.Validator
+	redisRepo   entity.RequestCacheRepository
+	spannerRepo entity.CreditEnquiryRepository
 }
 
 // NewCreditEnquiryServer creates a new instance of the credit enquiry server
-func NewCreditEnquiryServer(validator credit_enquiry.Validator, repo entity.RequestCacheRepository) *CreditEnquiryServer {
+func NewCreditEnquiryServer(validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository) *CreditEnquiryServer {
 	return &CreditEnquiryServer{
-		validator: validator,
-		repo:      repo,
+		validator:   validator,
+		redisRepo:   redisRepo,
+		spannerRepo: spannerRepo,
 	}
 }
 
 // ProcessCreditEnquiry handles incoming credit enquiry requests
 func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) (*pb.CreditEnquiryResponse, error) {
+	// Validate UUID
+	if _, err := uuid.FromBytes(req.RequestId); err != nil {
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "invalid UUID length",
+		}, nil
+	}
+
 	// Validate the request
 	if err := s.validator.ValidateRequest(req); err != nil {
 		return &pb.CreditEnquiryResponse{
@@ -38,11 +49,17 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	}
 
 	// Save the request to cache
-	if err := s.repo.SaveRequest(req); err != nil {
+	if err := s.redisRepo.SaveRequest(req); err != nil {
 		return &pb.CreditEnquiryResponse{
 			Success: false,
 			Message: err.Error(),
 		}, nil
+	}
+
+	// Save the request to Spanner
+	if err := s.spannerRepo.SaveCreditEnquiry(ctx, req); err != nil {
+		// Log the error but don't fail the request
+		log.Printf("Failed to save to Spanner: %v", err)
 	}
 
 	return &pb.CreditEnquiryResponse{
@@ -52,14 +69,14 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 }
 
 // StartServer starts the gRPC server
-func StartServer(port string, validator credit_enquiry.Validator, repo entity.RequestCacheRepository) error {
+func StartServer(port string, validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}
 
 	grpcServer := grpc.NewServer()
-	server := NewCreditEnquiryServer(validator, repo)
+	server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo)
 	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)

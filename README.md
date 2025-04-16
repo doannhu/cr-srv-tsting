@@ -1,14 +1,93 @@
 # Loan Service
 
-A Go service that processes loan requests via gRPC, validates them, and stores them in Redis.
+A Go service that processes loan requests via gRPC, validates them, stores them in Redis for caching, and persists them in Google Cloud Spanner.
 
 ## Requirements
 
 ### Core Functionality
 - Receives loan request messages in Protocol Buffers format via gRPC
 - Validates loan request data
-- Stores validated requests in Redis
+- Stores validated requests in Redis for caching
+- Persists validated requests in Google Cloud Spanner
 - Returns processing results via gRPC response
+
+### Infrastructure Requirements
+- Google Cloud Project with Spanner enabled
+- Spanner Instance and Database
+- Redis instance for caching
+- Service Account with appropriate permissions
+
+## Infrastructure Setup (Terraform)
+
+### Prerequisites
+- Terraform installed
+- Google Cloud SDK installed
+- Appropriate Google Cloud permissions
+- Service account with required roles
+
+### Required Roles
+- Spanner Admin
+- Service Account Admin
+- IAM Admin
+
+### Setup Steps
+1. Initialize Terraform:
+```bash
+terraform init
+```
+
+2. Review the plan:
+```bash
+terraform plan
+```
+
+3. Apply the configuration:
+```bash
+terraform apply
+```
+
+### Terraform Configuration
+The Terraform configuration creates:
+1. **Service Accounts**
+   - `credit-enquiry-sa`: Service account for the application
+   - `spanner-sa`: Service account for Spanner access
+
+2. **IAM Bindings**
+   - Spanner Admin role for the application service account
+   - Required permissions for service account management
+
+3. **Spanner Resources**
+   - Instance configuration
+   - Database setup
+   - Table schema for credit enquiries
+
+4. **Cloud Functions** (if needed)
+   - Function configurations
+   - Required permissions
+
+### Variables
+Required variables in `variables.tf`:
+- `project_id`: Google Cloud Project ID
+- `region`: Region for resources
+- `spanner_instance_name`: Name for Spanner instance
+- `spanner_database_name`: Name for Spanner database
+- `service_account_name`: Name for the service account
+
+### Processing Flow
+1. **Request Validation**
+   - Validates UUID format and length
+   - Validates request fields using protoc-gen-validate
+   - Returns error response if validation fails
+
+2. **Cache Storage**
+   - Stores validated request in Redis
+   - Enables quick access for duplicate detection
+   - Returns error if cache storage fails
+
+3. **Persistent Storage**
+   - Asynchronously stores request in Google Cloud Spanner
+   - Maintains historical record of all requests
+   - Continues processing even if Spanner storage fails
 
 ### Validations
 1. **UUID Validation**
@@ -41,7 +120,8 @@ A Go service that processes loan requests via gRPC, validates them, and stores t
 - Comprehensive logging using standard log package
 - Unit tests for service, repository, and validation layers
 - Protocol buffer message definitions with validation rules
-- Redis integration for data persistence
+- Redis integration for data caching
+- Google Cloud Spanner integration for persistent storage
 - gRPC server implementation
 
 ## Project Structure
@@ -54,14 +134,20 @@ go-loan-service-v3/
 ├── internal/
 │   ├── credit_enquiry/
 │   │   ├── entity/
-│   │   │   └── request_cache.go # Request cache entity definition
+│   │   │   ├── request_cache.go # Request cache entity definition
+│   │   │   └── credit_enquiry.go # Credit enquiry entity definition
 │   │   ├── repository/
-│   │   │   └── redis_repository.go # Redis data persistence
+│   │   │   ├── redis_repository.go  # Redis data caching
+│   │   │   └── spanner_repository.go # Spanner data persistence
 │   │   ├── server/
 │   │   │   └── server.go       # gRPC server implementation
 │   │   └── validator.go        # Business logic and validations
 │   └── config/
 │       └── config.go           # Configuration management
+├── terraform/
+│   ├── main.tf                 # Main Terraform configuration
+│   ├── variables.tf            # Terraform variables
+│   └── outputs.tf              # Terraform outputs
 ├── proto/
 │   └── credit_enquiry.proto    # Protocol buffer definitions
 ├── go.mod                      # Go module definition
@@ -77,7 +163,8 @@ go-loan-service-v3/
 - gRPC service definition
 
 ### Repository Layer (`internal/credit_enquiry/repository`)
-- Redis connection management
+- Redis connection management for caching
+- Spanner connection management for persistence
 - CRUD operations for loan requests
 - Key management using UUID strings
 - Schema-based storage with request metadata
@@ -145,5 +232,7 @@ go-loan-service-v3/
 - Protocol Buffers (google.golang.org/protobuf)
 - gRPC (google.golang.org/grpc)
 - UUID (github.com/google/uuid)
+- Google Cloud Spanner (cloud.google.com/go/spanner)
 - Testify (github.com/stretchr/testify)
-- protoc-gen-validate (github.com/envoyproxy/protoc-gen-validate) 
+- protoc-gen-validate (github.com/envoyproxy/protoc-gen-validate)
+- Terraform (for infrastructure setup) 

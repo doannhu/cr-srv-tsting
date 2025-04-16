@@ -19,16 +19,29 @@ func (m *mockValidator) ValidateRequest(req *pb.CreditEnquiryRequest) error {
 	return m.validateFunc(req)
 }
 
-// mockRepository implements the RequestCacheRepository interface for testing
-type mockRepository struct {
+// mockRedisRepository implements the RequestCacheRepository interface for testing
+type mockRedisRepository struct {
 	saveFunc func(*pb.CreditEnquiryRequest) error
 }
 
-func (m *mockRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
+func (m *mockRedisRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
 	return m.saveFunc(req)
 }
 
-func (m *mockRepository) GetRequest(requestID string) (*pb.CreditEnquiryRequest, error) {
+func (m *mockRedisRepository) GetRequest(requestID string) (*pb.CreditEnquiryRequest, error) {
+	return nil, nil
+}
+
+// mockSpannerRepository implements the CreditEnquiryRepository interface for testing
+type mockSpannerRepository struct {
+	saveFunc func(context.Context, *pb.CreditEnquiryRequest) error
+}
+
+func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+	return m.saveFunc(ctx, req)
+}
+
+func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
 	return nil, nil
 }
 
@@ -53,36 +66,49 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		request        *pb.CreditEnquiryRequest
-		validatorError error
-		repoError      error
-		wantSuccess    bool
-		wantMessage    string
+		name             string
+		request          *pb.CreditEnquiryRequest
+		validatorError   error
+		redisRepoError   error
+		spannerRepoError error
+		wantSuccess      bool
+		wantMessage      string
 	}{
 		{
-			name:           "valid request",
-			request:        validRequest,
-			validatorError: nil,
-			repoError:      nil,
-			wantSuccess:    true,
-			wantMessage:    "Credit enquiry request processed successfully",
+			name:             "valid request",
+			request:          validRequest,
+			validatorError:   nil,
+			redisRepoError:   nil,
+			spannerRepoError: nil,
+			wantSuccess:      true,
+			wantMessage:      "Credit enquiry request processed successfully",
 		},
 		{
-			name:           "validation failed",
-			request:        validRequest,
-			validatorError: assert.AnError,
-			repoError:      nil,
-			wantSuccess:    false,
-			wantMessage:    assert.AnError.Error(),
+			name:             "validation failed",
+			request:          validRequest,
+			validatorError:   assert.AnError,
+			redisRepoError:   nil,
+			spannerRepoError: nil,
+			wantSuccess:      false,
+			wantMessage:      assert.AnError.Error(),
 		},
 		{
-			name:           "repository error",
-			request:        validRequest,
-			validatorError: nil,
-			repoError:      assert.AnError,
-			wantSuccess:    false,
-			wantMessage:    assert.AnError.Error(),
+			name:             "redis repository error",
+			request:          validRequest,
+			validatorError:   nil,
+			redisRepoError:   assert.AnError,
+			spannerRepoError: nil,
+			wantSuccess:      false,
+			wantMessage:      assert.AnError.Error(),
+		},
+		{
+			name:             "spanner repository error",
+			request:          validRequest,
+			validatorError:   nil,
+			redisRepoError:   nil,
+			spannerRepoError: assert.AnError,
+			wantSuccess:      true, // Should still succeed as Redis save was successful
+			wantMessage:      "Credit enquiry request processed successfully",
 		},
 		{
 			name: "invalid UUID",
@@ -98,10 +124,11 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				TotalSavingsAmount:               10000,
 				TotalNumberOfContinuingHomeLoans: 0,
 			},
-			validatorError: nil,
-			repoError:      nil,
-			wantSuccess:    false,
-			wantMessage:    "invalid UUID length",
+			validatorError:   nil,
+			redisRepoError:   nil,
+			spannerRepoError: nil,
+			wantSuccess:      false,
+			wantMessage:      "invalid UUID length",
 		},
 	}
 
@@ -114,15 +141,22 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				},
 			}
 
-			// Create mock repository
-			repo := &mockRepository{
+			// Create mock Redis repository
+			redisRepo := &mockRedisRepository{
 				saveFunc: func(req *pb.CreditEnquiryRequest) error {
-					return tt.repoError
+					return tt.redisRepoError
+				},
+			}
+
+			// Create mock Spanner repository
+			spannerRepo := &mockSpannerRepository{
+				saveFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+					return tt.spannerRepoError
 				},
 			}
 
 			// Create server instance
-			server := NewCreditEnquiryServer(validator, repo)
+			server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo)
 
 			// Process the request
 			response, err := server.ProcessCreditEnquiry(context.Background(), tt.request)
