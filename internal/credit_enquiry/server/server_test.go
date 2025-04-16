@@ -45,6 +45,15 @@ func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID 
 	return nil, nil
 }
 
+// mockPublisher implements the CreditEnquiryPublisher interface for testing
+type mockPublisher struct {
+	publishFunc func(context.Context, *pb.CreditEnquiryRequest) error
+}
+
+func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+	return m.publishFunc(ctx, req)
+}
+
 func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	// Generate a valid UUID for testing
 	validUUID := uuid.New()
@@ -107,8 +116,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			validatorError:   nil,
 			redisRepoError:   nil,
 			spannerRepoError: assert.AnError,
-			wantSuccess:      true, // Should still succeed as Redis save was successful
-			wantMessage:      "Credit enquiry request processed successfully",
+			wantSuccess:      false,
+			wantMessage:      assert.AnError.Error(),
 		},
 		{
 			name: "invalid UUID",
@@ -155,8 +164,15 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				},
 			}
 
+			// Create mock publisher
+			publisher := &mockPublisher{
+				publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+					return nil
+				},
+			}
+
 			// Create server instance
-			server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo)
+			server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo, publisher)
 
 			// Process the request
 			response, err := server.ProcessCreditEnquiry(context.Background(), tt.request)

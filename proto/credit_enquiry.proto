@@ -1,10 +1,11 @@
 syntax = "proto3";
 
-package creditenquiry;
+package proto;
 
 option go_package = "go-loan-service-v3/proto";
 
 import "validate/validate.proto";
+import "google/protobuf/timestamp.proto";
 
 message CreditEnquiryRequest {
     bytes request_id = 1 [(validate.rules).bytes = {ignore_empty: true, len: 16}];  // UUID v4
@@ -22,6 +23,31 @@ message CreditEnquiryRequest {
 message CreditEnquiryResponse {
     bool success = 1;
     string message = 2;
+}
+
+message CreditEnquiryEventData {
+    string credit_enquiry_id = 1;
+    string application_number = 2;
+    string enquiry_state = 3;
+    double loan_amount = 4;
+    string loan_purpose = 5;
+    int64 initial_structure_term_month = 6;
+    double total_monthly_net_income_amount = 7;
+    double total_annual_gross_income = 8;
+    double total_savings_amount = 9;
+    double total_number_of_continuing_home_loans = 10;
+}
+
+message CreditEnquiryEvent {
+    string id = 1;
+    string source = 2;
+    string spec_version = 3;
+    string type = 4;
+    string data_content_type = 5;
+    string data_schema = 6;
+    string subject = 7;
+    google.protobuf.Timestamp time = 8;
+    CreditEnquiryEventData data = 9;
 }
 
 service CreditEnquiryService {

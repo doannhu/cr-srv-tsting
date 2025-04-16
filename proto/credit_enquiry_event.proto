@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package proto;
+
+import "google/protobuf/timestamp.proto";
+
+option go_package = "go-loan-service-v3/proto";
+
+// CreditEnquiryEvent represents a CloudEvent for credit enquiry creation
+message CreditEnquiryEvent {
+  // CloudEvent attributes
+  string id = 1;                // ce-id
+  string source = 2;            // ce-source
+  string spec_version = 3;      // ce-specversion
+  string type = 4;              // ce-type
+  string data_content_type = 5; // ce-datacontenttype
+  string data_schema = 6;       // ce-dataschema
+  string subject = 7;           // ce-subject
+  google.protobuf.Timestamp time = 8; // ce-time
+
+  // Event data
+  CreditEnquiryEventData data = 9;
+}
+
+// CreditEnquiryEventData contains the actual event payload
+message CreditEnquiryEventData {
+  string credit_enquiry_id = 1;
+  string application_number = 2;
+  string enquiry_state = 3;
+  double loan_amount = 4;
+  string loan_purpose = 5;
+  int32 initial_structure_term_month = 6;
+  double total_monthly_net_income_amount = 7;
+  double total_annual_gross_income = 8;
+  double total_savings_amount = 9;
+  int32 total_number_of_continuing_home_loans = 10;
+} 

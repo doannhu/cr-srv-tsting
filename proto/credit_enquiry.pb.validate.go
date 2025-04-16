@@ -275,3 +275,299 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CreditEnquiryResponseValidationError{}
+
+// Validate checks the field values on CreditEnquiryEventData with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreditEnquiryEventData) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreditEnquiryEventData with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreditEnquiryEventDataMultiError, or nil if none found.
+func (m *CreditEnquiryEventData) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreditEnquiryEventData) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for CreditEnquiryId
+
+	// no validation rules for ApplicationNumber
+
+	// no validation rules for EnquiryState
+
+	// no validation rules for LoanAmount
+
+	// no validation rules for LoanPurpose
+
+	// no validation rules for InitialStructureTermMonth
+
+	// no validation rules for TotalMonthlyNetIncomeAmount
+
+	// no validation rules for TotalAnnualGrossIncome
+
+	// no validation rules for TotalSavingsAmount
+
+	// no validation rules for TotalNumberOfContinuingHomeLoans
+
+	if len(errors) > 0 {
+		return CreditEnquiryEventDataMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreditEnquiryEventDataMultiError is an error wrapping multiple validation
+// errors returned by CreditEnquiryEventData.ValidateAll() if the designated
+// constraints aren't met.
+type CreditEnquiryEventDataMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreditEnquiryEventDataMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreditEnquiryEventDataMultiError) AllErrors() []error { return m }
+
+// CreditEnquiryEventDataValidationError is the validation error returned by
+// CreditEnquiryEventData.Validate if the designated constraints aren't met.
+type CreditEnquiryEventDataValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreditEnquiryEventDataValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreditEnquiryEventDataValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreditEnquiryEventDataValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreditEnquiryEventDataValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreditEnquiryEventDataValidationError) ErrorName() string {
+	return "CreditEnquiryEventDataValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreditEnquiryEventDataValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreditEnquiryEventData.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreditEnquiryEventDataValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreditEnquiryEventDataValidationError{}
+
+// Validate checks the field values on CreditEnquiryEvent with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreditEnquiryEvent) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreditEnquiryEvent with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreditEnquiryEventMultiError, or nil if none found.
+func (m *CreditEnquiryEvent) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreditEnquiryEvent) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for Source
+
+	// no validation rules for SpecVersion
+
+	// no validation rules for Type
+
+	// no validation rules for DataContentType
+
+	// no validation rules for DataSchema
+
+	// no validation rules for Subject
+
+	if all {
+		switch v := interface{}(m.GetTime()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreditEnquiryEventValidationError{
+					field:  "Time",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreditEnquiryEventValidationError{
+					field:  "Time",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTime()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreditEnquiryEventValidationError{
+				field:  "Time",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetData()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, CreditEnquiryEventValidationError{
+					field:  "Data",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, CreditEnquiryEventValidationError{
+					field:  "Data",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetData()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return CreditEnquiryEventValidationError{
+				field:  "Data",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return CreditEnquiryEventMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreditEnquiryEventMultiError is an error wrapping multiple validation errors
+// returned by CreditEnquiryEvent.ValidateAll() if the designated constraints
+// aren't met.
+type CreditEnquiryEventMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreditEnquiryEventMultiError) Error() string {
+	msgs := make([]string, 0, len(m))
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreditEnquiryEventMultiError) AllErrors() []error { return m }
+
+// CreditEnquiryEventValidationError is the validation error returned by
+// CreditEnquiryEvent.Validate if the designated constraints aren't met.
+type CreditEnquiryEventValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreditEnquiryEventValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreditEnquiryEventValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreditEnquiryEventValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreditEnquiryEventValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreditEnquiryEventValidationError) ErrorName() string {
+	return "CreditEnquiryEventValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreditEnquiryEventValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreditEnquiryEvent.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreditEnquiryEventValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreditEnquiryEventValidationError{}

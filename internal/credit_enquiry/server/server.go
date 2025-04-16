@@ -19,24 +19,38 @@ type CreditEnquiryServer struct {
 	validator   credit_enquiry.Validator
 	redisRepo   entity.RequestCacheRepository
 	spannerRepo entity.CreditEnquiryRepository
+	publisher   credit_enquiry.CreditEnquiryPublisher
 }
 
 // NewCreditEnquiryServer creates a new instance of the credit enquiry server
-func NewCreditEnquiryServer(validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository) *CreditEnquiryServer {
+func NewCreditEnquiryServer(validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository, publisher credit_enquiry.CreditEnquiryPublisher) *CreditEnquiryServer {
 	return &CreditEnquiryServer{
 		validator:   validator,
 		redisRepo:   redisRepo,
 		spannerRepo: spannerRepo,
+		publisher:   publisher,
 	}
 }
 
 // ProcessCreditEnquiry handles incoming credit enquiry requests
 func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) (*pb.CreditEnquiryResponse, error) {
 	// Validate UUID
-	if _, err := uuid.FromBytes(req.RequestId); err != nil {
+	if len(req.RequestId) == 0 {
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "request_id is required",
+		}, nil
+	}
+	if len(req.RequestId) != 16 {
 		return &pb.CreditEnquiryResponse{
 			Success: false,
 			Message: "invalid UUID length",
+		}, nil
+	}
+	if _, err := uuid.FromBytes(req.RequestId); err != nil {
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "invalid UUID format",
 		}, nil
 	}
 
@@ -58,8 +72,16 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 
 	// Save the request to Spanner
 	if err := s.spannerRepo.SaveCreditEnquiry(ctx, req); err != nil {
-		// Log the error but don't fail the request
-		log.Printf("Failed to save to Spanner: %v", err)
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: err.Error(),
+		}, nil
+	}
+
+	// Publish event to Pub/Sub
+	if err := s.publisher.PublishCreditEnquiryEvent(ctx, req); err != nil {
+		// Log the error but don't fail the request since data is already saved
+		log.Printf("Failed to publish event: %v", err)
 	}
 
 	return &pb.CreditEnquiryResponse{
@@ -69,14 +91,14 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 }
 
 // StartServer starts the gRPC server
-func StartServer(port string, validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository) error {
+func StartServer(port string, validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository, publisher credit_enquiry.CreditEnquiryPublisher) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}
 
 	grpcServer := grpc.NewServer()
-	server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo)
+	server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo, publisher)
 	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)

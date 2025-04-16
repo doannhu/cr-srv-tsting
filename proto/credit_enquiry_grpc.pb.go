@@ -19,7 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	CreditEnquiryService_ProcessCreditEnquiry_FullMethodName = "/creditenquiry.CreditEnquiryService/ProcessCreditEnquiry"
+	CreditEnquiryService_ProcessCreditEnquiry_FullMethodName = "/proto.CreditEnquiryService/ProcessCreditEnquiry"
 )
 
 // CreditEnquiryServiceClient is the client API for CreditEnquiryService service.
@@ -108,7 +108,7 @@ func _CreditEnquiryService_ProcessCreditEnquiry_Handler(srv interface{}, ctx con
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
 var CreditEnquiryService_ServiceDesc = grpc.ServiceDesc{
-	ServiceName: "creditenquiry.CreditEnquiryService",
+	ServiceName: "proto.CreditEnquiryService",
 	HandlerType: (*CreditEnquiryServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{

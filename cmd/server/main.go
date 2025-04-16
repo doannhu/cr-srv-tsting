@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"go-loan-service-v3/internal/credit_enquiry"
+	"go-loan-service-v3/internal/credit_enquiry/publisher"
 	"go-loan-service-v3/internal/credit_enquiry/repository"
 	"go-loan-service-v3/internal/credit_enquiry/server"
 
@@ -22,9 +23,15 @@ func main() {
 	spannerProject := getEnv("SPANNER_PROJECT", "")
 	spannerInstance := getEnv("SPANNER_INSTANCE", "")
 	spannerDatabase := getEnv("SPANNER_DATABASE", "")
+	pubsubProject := getEnv("PUBSUB_PROJECT", "")
+	pubsubTopic := getEnv("PUBSUB_TOPIC", "credit-enquiry-events")
 
 	if spannerProject == "" || spannerInstance == "" || spannerDatabase == "" {
 		log.Fatal("Spanner configuration is required. Please set SPANNER_PROJECT, SPANNER_INSTANCE, and SPANNER_DATABASE environment variables")
+	}
+
+	if pubsubProject == "" {
+		log.Fatal("Pub/Sub configuration is required. Please set PUBSUB_PROJECT environment variable")
 	}
 
 	// Initialize Redis client
@@ -40,13 +47,19 @@ func main() {
 	}
 	defer spannerClient.Close()
 
+	// Initialize Pub/Sub publisher
+	pubsubPublisher, err := publisher.NewPubSubPublisher(context.Background(), pubsubProject, pubsubTopic)
+	if err != nil {
+		log.Fatalf("Failed to create Pub/Sub publisher: %v", err)
+	}
+
 	// Initialize validator and repositories
 	validator := credit_enquiry.NewValidator(log.New(os.Stdout, "", log.LstdFlags))
 	redisRepo := repository.NewRedisRepository(redisClient)
 	spannerRepo := repository.NewSpannerRepository(spannerClient)
 
 	// Start the gRPC server
-	if err := server.StartServer(serverPort, validator, redisRepo, spannerRepo); err != nil {
+	if err := server.StartServer(serverPort, validator, redisRepo, spannerRepo, pubsubPublisher); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }

@@ -10,6 +10,7 @@ import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -190,11 +191,235 @@ func (x *CreditEnquiryResponse) GetMessage() string {
 	return ""
 }
 
+type CreditEnquiryEventData struct {
+	state                            protoimpl.MessageState `protogen:"open.v1"`
+	CreditEnquiryId                  string                 `protobuf:"bytes,1,opt,name=credit_enquiry_id,json=creditEnquiryId,proto3" json:"credit_enquiry_id,omitempty"`
+	ApplicationNumber                string                 `protobuf:"bytes,2,opt,name=application_number,json=applicationNumber,proto3" json:"application_number,omitempty"`
+	EnquiryState                     string                 `protobuf:"bytes,3,opt,name=enquiry_state,json=enquiryState,proto3" json:"enquiry_state,omitempty"`
+	LoanAmount                       float64                `protobuf:"fixed64,4,opt,name=loan_amount,json=loanAmount,proto3" json:"loan_amount,omitempty"`
+	LoanPurpose                      string                 `protobuf:"bytes,5,opt,name=loan_purpose,json=loanPurpose,proto3" json:"loan_purpose,omitempty"`
+	InitialStructureTermMonth        int64                  `protobuf:"varint,6,opt,name=initial_structure_term_month,json=initialStructureTermMonth,proto3" json:"initial_structure_term_month,omitempty"`
+	TotalMonthlyNetIncomeAmount      float64                `protobuf:"fixed64,7,opt,name=total_monthly_net_income_amount,json=totalMonthlyNetIncomeAmount,proto3" json:"total_monthly_net_income_amount,omitempty"`
+	TotalAnnualGrossIncome           float64                `protobuf:"fixed64,8,opt,name=total_annual_gross_income,json=totalAnnualGrossIncome,proto3" json:"total_annual_gross_income,omitempty"`
+	TotalSavingsAmount               float64                `protobuf:"fixed64,9,opt,name=total_savings_amount,json=totalSavingsAmount,proto3" json:"total_savings_amount,omitempty"`
+	TotalNumberOfContinuingHomeLoans float64                `protobuf:"fixed64,10,opt,name=total_number_of_continuing_home_loans,json=totalNumberOfContinuingHomeLoans,proto3" json:"total_number_of_continuing_home_loans,omitempty"`
+	unknownFields                    protoimpl.UnknownFields
+	sizeCache                        protoimpl.SizeCache
+}
+
+func (x *CreditEnquiryEventData) Reset() {
+	*x = CreditEnquiryEventData{}
+	mi := &file_proto_credit_enquiry_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreditEnquiryEventData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreditEnquiryEventData) ProtoMessage() {}
+
+func (x *CreditEnquiryEventData) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_credit_enquiry_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreditEnquiryEventData.ProtoReflect.Descriptor instead.
+func (*CreditEnquiryEventData) Descriptor() ([]byte, []int) {
+	return file_proto_credit_enquiry_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *CreditEnquiryEventData) GetCreditEnquiryId() string {
+	if x != nil {
+		return x.CreditEnquiryId
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEventData) GetApplicationNumber() string {
+	if x != nil {
+		return x.ApplicationNumber
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEventData) GetEnquiryState() string {
+	if x != nil {
+		return x.EnquiryState
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEventData) GetLoanAmount() float64 {
+	if x != nil {
+		return x.LoanAmount
+	}
+	return 0
+}
+
+func (x *CreditEnquiryEventData) GetLoanPurpose() string {
+	if x != nil {
+		return x.LoanPurpose
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEventData) GetInitialStructureTermMonth() int64 {
+	if x != nil {
+		return x.InitialStructureTermMonth
+	}
+	return 0
+}
+
+func (x *CreditEnquiryEventData) GetTotalMonthlyNetIncomeAmount() float64 {
+	if x != nil {
+		return x.TotalMonthlyNetIncomeAmount
+	}
+	return 0
+}
+
+func (x *CreditEnquiryEventData) GetTotalAnnualGrossIncome() float64 {
+	if x != nil {
+		return x.TotalAnnualGrossIncome
+	}
+	return 0
+}
+
+func (x *CreditEnquiryEventData) GetTotalSavingsAmount() float64 {
+	if x != nil {
+		return x.TotalSavingsAmount
+	}
+	return 0
+}
+
+func (x *CreditEnquiryEventData) GetTotalNumberOfContinuingHomeLoans() float64 {
+	if x != nil {
+		return x.TotalNumberOfContinuingHomeLoans
+	}
+	return 0
+}
+
+type CreditEnquiryEvent struct {
+	state           protoimpl.MessageState  `protogen:"open.v1"`
+	Id              string                  `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Source          string                  `protobuf:"bytes,2,opt,name=source,proto3" json:"source,omitempty"`
+	SpecVersion     string                  `protobuf:"bytes,3,opt,name=spec_version,json=specVersion,proto3" json:"spec_version,omitempty"`
+	Type            string                  `protobuf:"bytes,4,opt,name=type,proto3" json:"type,omitempty"`
+	DataContentType string                  `protobuf:"bytes,5,opt,name=data_content_type,json=dataContentType,proto3" json:"data_content_type,omitempty"`
+	DataSchema      string                  `protobuf:"bytes,6,opt,name=data_schema,json=dataSchema,proto3" json:"data_schema,omitempty"`
+	Subject         string                  `protobuf:"bytes,7,opt,name=subject,proto3" json:"subject,omitempty"`
+	Time            *timestamppb.Timestamp  `protobuf:"bytes,8,opt,name=time,proto3" json:"time,omitempty"`
+	Data            *CreditEnquiryEventData `protobuf:"bytes,9,opt,name=data,proto3" json:"data,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *CreditEnquiryEvent) Reset() {
+	*x = CreditEnquiryEvent{}
+	mi := &file_proto_credit_enquiry_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CreditEnquiryEvent) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CreditEnquiryEvent) ProtoMessage() {}
+
+func (x *CreditEnquiryEvent) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_credit_enquiry_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CreditEnquiryEvent.ProtoReflect.Descriptor instead.
+func (*CreditEnquiryEvent) Descriptor() ([]byte, []int) {
+	return file_proto_credit_enquiry_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CreditEnquiryEvent) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetSource() string {
+	if x != nil {
+		return x.Source
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetSpecVersion() string {
+	if x != nil {
+		return x.SpecVersion
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetType() string {
+	if x != nil {
+		return x.Type
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetDataContentType() string {
+	if x != nil {
+		return x.DataContentType
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetDataSchema() string {
+	if x != nil {
+		return x.DataSchema
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetSubject() string {
+	if x != nil {
+		return x.Subject
+	}
+	return ""
+}
+
+func (x *CreditEnquiryEvent) GetTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Time
+	}
+	return nil
+}
+
+func (x *CreditEnquiryEvent) GetData() *CreditEnquiryEventData {
+	if x != nil {
+		return x.Data
+	}
+	return nil
+}
+
 var File_proto_credit_enquiry_proto protoreflect.FileDescriptor
 
 const file_proto_credit_enquiry_proto_rawDesc = "" +
 	"\n" +
-	"\x1aproto/credit_enquiry.proto\x12\rcreditenquiry\x1a\x17validate/validate.proto\"\x9d\x04\n" +
+	"\x1aproto/credit_enquiry.proto\x12\x05proto\x1a\x17validate/validate.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"\x9d\x04\n" +
 	"\x14CreditEnquiryRequest\x12(\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\fB\t\xfaB\x06z\x04h\x10p\x01R\trequestId\x12#\n" +
@@ -211,9 +436,33 @@ const file_proto_credit_enquiry_proto_rawDesc = "" +
 	" \x01(\x01R totalNumberOfContinuingHomeLoans\"K\n" +
 	"\x15CreditEnquiryResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage2{\n" +
-	"\x14CreditEnquiryService\x12c\n" +
-	"\x14ProcessCreditEnquiry\x12#.creditenquiry.CreditEnquiryRequest\x1a$.creditenquiry.CreditEnquiryResponse\"\x00B\x1aZ\x18go-loan-service-v3/protob\x06proto3"
+	"\amessage\x18\x02 \x01(\tR\amessage\"\xa1\x04\n" +
+	"\x16CreditEnquiryEventData\x12*\n" +
+	"\x11credit_enquiry_id\x18\x01 \x01(\tR\x0fcreditEnquiryId\x12-\n" +
+	"\x12application_number\x18\x02 \x01(\tR\x11applicationNumber\x12#\n" +
+	"\renquiry_state\x18\x03 \x01(\tR\fenquiryState\x12\x1f\n" +
+	"\vloan_amount\x18\x04 \x01(\x01R\n" +
+	"loanAmount\x12!\n" +
+	"\floan_purpose\x18\x05 \x01(\tR\vloanPurpose\x12?\n" +
+	"\x1cinitial_structure_term_month\x18\x06 \x01(\x03R\x19initialStructureTermMonth\x12D\n" +
+	"\x1ftotal_monthly_net_income_amount\x18\a \x01(\x01R\x1btotalMonthlyNetIncomeAmount\x129\n" +
+	"\x19total_annual_gross_income\x18\b \x01(\x01R\x16totalAnnualGrossIncome\x120\n" +
+	"\x14total_savings_amount\x18\t \x01(\x01R\x12totalSavingsAmount\x12O\n" +
+	"%total_number_of_continuing_home_loans\x18\n" +
+	" \x01(\x01R totalNumberOfContinuingHomeLoans\"\xbd\x02\n" +
+	"\x12CreditEnquiryEvent\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x16\n" +
+	"\x06source\x18\x02 \x01(\tR\x06source\x12!\n" +
+	"\fspec_version\x18\x03 \x01(\tR\vspecVersion\x12\x12\n" +
+	"\x04type\x18\x04 \x01(\tR\x04type\x12*\n" +
+	"\x11data_content_type\x18\x05 \x01(\tR\x0fdataContentType\x12\x1f\n" +
+	"\vdata_schema\x18\x06 \x01(\tR\n" +
+	"dataSchema\x12\x18\n" +
+	"\asubject\x18\a \x01(\tR\asubject\x12.\n" +
+	"\x04time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x04time\x121\n" +
+	"\x04data\x18\t \x01(\v2\x1d.proto.CreditEnquiryEventDataR\x04data2k\n" +
+	"\x14CreditEnquiryService\x12S\n" +
+	"\x14ProcessCreditEnquiry\x12\x1b.proto.CreditEnquiryRequest\x1a\x1c.proto.CreditEnquiryResponse\"\x00B\x1aZ\x18go-loan-service-v3/protob\x06proto3"
 
 var (
 	file_proto_credit_enquiry_proto_rawDescOnce sync.Once
@@ -227,19 +476,24 @@ func file_proto_credit_enquiry_proto_rawDescGZIP() []byte {
 	return file_proto_credit_enquiry_proto_rawDescData
 }
 
-var file_proto_credit_enquiry_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_credit_enquiry_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_proto_credit_enquiry_proto_goTypes = []any{
-	(*CreditEnquiryRequest)(nil),  // 0: creditenquiry.CreditEnquiryRequest
-	(*CreditEnquiryResponse)(nil), // 1: creditenquiry.CreditEnquiryResponse
+	(*CreditEnquiryRequest)(nil),   // 0: proto.CreditEnquiryRequest
+	(*CreditEnquiryResponse)(nil),  // 1: proto.CreditEnquiryResponse
+	(*CreditEnquiryEventData)(nil), // 2: proto.CreditEnquiryEventData
+	(*CreditEnquiryEvent)(nil),     // 3: proto.CreditEnquiryEvent
+	(*timestamppb.Timestamp)(nil),  // 4: google.protobuf.Timestamp
 }
 var file_proto_credit_enquiry_proto_depIdxs = []int32{
-	0, // 0: creditenquiry.CreditEnquiryService.ProcessCreditEnquiry:input_type -> creditenquiry.CreditEnquiryRequest
-	1, // 1: creditenquiry.CreditEnquiryService.ProcessCreditEnquiry:output_type -> creditenquiry.CreditEnquiryResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: proto.CreditEnquiryEvent.time:type_name -> google.protobuf.Timestamp
+	2, // 1: proto.CreditEnquiryEvent.data:type_name -> proto.CreditEnquiryEventData
+	0, // 2: proto.CreditEnquiryService.ProcessCreditEnquiry:input_type -> proto.CreditEnquiryRequest
+	1, // 3: proto.CreditEnquiryService.ProcessCreditEnquiry:output_type -> proto.CreditEnquiryResponse
+	3, // [3:4] is the sub-list for method output_type
+	2, // [2:3] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_proto_credit_enquiry_proto_init() }
@@ -253,7 +507,7 @@ func file_proto_credit_enquiry_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_credit_enquiry_proto_rawDesc), len(file_proto_credit_enquiry_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

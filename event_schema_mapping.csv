@@ -1,0 +1,9 @@
+Attribute,Type,Constraint,Description,Example / Value
+ce-id,String,Required,Unique ID per event,(auto-generated UUID)
+ce-source,URI-reference,Required,Context of event,enquiries.gearbox.anzx
+ce-specversion,String,Required,CloudEvents spec version,1.0
+ce-type,String,Required,Type of event,com.anzx.gearbox.enquiries.v1beta2.creditenquiry.created
+ce-datacontenttype,String,Required,Content type,application/protobuf
+ce-dataschema,URI,Required,Schema definition,proto://buf.anz/...#CreditEnquiryCreatedEvent
+ce-subject,String,Required,Entity ID the event belongs to,credit_enquiry/<id>
+ce-time,Timestamp,Required,Time of event,<timestamp>
