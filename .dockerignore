@@ -1,0 +1,49 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.idea
+.vscode
+
+# Build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Dependency directories
+vendor/
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+tfplan
+
+# Environment files
+.env
+*.env
+
+# Documentation
+*.md
+!README.md
+*.txt
+
+# Logs
+*.log
+
+# Local development
+docker-compose.yml
+Dockerfile
+.dockerignore
+
+# Google Cloud
+key.json
+*.pem
+*.key
+*.crt 

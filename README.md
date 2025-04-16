@@ -256,4 +256,55 @@ go-loan-service-v3/
 - Google Cloud Spanner (cloud.google.com/go/spanner)
 - Testify (github.com/stretchr/testify)
 - protoc-gen-validate (github.com/envoyproxy/protoc-gen-validate)
-- Terraform (for infrastructure setup) 
+- Terraform (for infrastructure setup)
+
+## Docker Setup
+
+### Prerequisites
+- Docker installed
+- Docker Compose installed
+- Google Cloud credentials (key.json)
+
+### Building the Docker Image
+1. Using the build script:
+```bash
+./scripts/build-docker.sh [--registry=<registry>] [--tag=<tag>]
+```
+
+2. Using Docker directly:
+```bash
+docker build -t go-loan-service:latest .
+```
+
+### Running with Docker Compose
+1. Set up environment variables:
+```bash
+export SPANNER_PROJECT="your-project-id"
+export SPANNER_INSTANCE="your-instance"
+export SPANNER_DATABASE="your-database"
+export PUBSUB_PROJECT="your-project-id"
+export PUBSUB_TOPIC="your-topic"
+```
+
+2. Start the services:
+```bash
+docker-compose up
+```
+
+### Environment Variables
+- `REDIS_HOST`: Redis server host (default: localhost)
+- `REDIS_PORT`: Redis server port (default: 6379)
+- `SERVER_PORT`: gRPC server port (default: 50051)
+- `SPANNER_PROJECT`: Google Cloud project ID
+- `SPANNER_INSTANCE`: Spanner instance name
+- `SPANNER_DATABASE`: Spanner database name
+- `PUBSUB_PROJECT`: Google Cloud project ID for Pub/Sub
+- `PUBSUB_TOPIC`: Pub/Sub topic name (default: credit-enquiry-events)
+
+### Volumes
+- Redis data is persisted in a Docker volume
+- Google Cloud credentials are mounted from `key.json`
+
+### Networks
+- Services communicate through a bridge network
+- Redis is accessible to the server at hostname `redis` 
