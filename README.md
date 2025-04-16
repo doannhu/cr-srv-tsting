@@ -1,6 +1,6 @@
 # Loan Service
 
-A Go service that processes loan requests via gRPC, validates them, stores them in Redis for caching, and persists them in Google Cloud Spanner.
+A Go service that processes loan requests via gRPC, validates them, stores them in Redis for caching, persists them in Google Cloud Spanner, and publishes events to Google Cloud Pub/Sub.
 
 ## Requirements
 
@@ -9,11 +9,13 @@ A Go service that processes loan requests via gRPC, validates them, stores them 
 - Validates loan request data
 - Stores validated requests in Redis for caching
 - Persists validated requests in Google Cloud Spanner
+- Publishes credit enquiry events to Google Cloud Pub/Sub
 - Returns processing results via gRPC response
 
 ### Infrastructure Requirements
-- Google Cloud Project with Spanner enabled
+- Google Cloud Project with Spanner and Pub/Sub enabled
 - Spanner Instance and Database
+- Pub/Sub Topic for credit enquiry events
 - Redis instance for caching
 - Service Account with appropriate permissions
 
@@ -27,6 +29,7 @@ A Go service that processes loan requests via gRPC, validates them, stores them 
 
 ### Required Roles
 - Spanner Admin
+- Pub/Sub Publisher
 - Service Account Admin
 - IAM Admin
 
@@ -51,9 +54,11 @@ The Terraform configuration creates:
 1. **Service Accounts**
    - `credit-enquiry-sa`: Service account for the application
    - `spanner-sa`: Service account for Spanner access
+   - `pubsub-sa`: Service account for Pub/Sub access
 
 2. **IAM Bindings**
    - Spanner Admin role for the application service account
+   - Pub/Sub Publisher role for the application service account
    - Required permissions for service account management
 
 3. **Spanner Resources**
@@ -61,8 +66,9 @@ The Terraform configuration creates:
    - Database setup
    - Table schema for credit enquiries
 
-4. **Cloud Functions** (if needed)
-   - Function configurations
+4. **Pub/Sub Resources**
+   - Topic for credit enquiry events
+   - Subscription for event processing
    - Required permissions
 
 ### Variables
@@ -88,6 +94,12 @@ Required variables in `variables.tf`:
    - Asynchronously stores request in Google Cloud Spanner
    - Maintains historical record of all requests
    - Continues processing even if Spanner storage fails
+
+4. **Event Publishing**
+   - Publishes credit enquiry event to Pub/Sub topic
+   - Includes request details and processing status
+   - Continues processing even if event publishing fails
+   - Logs any publishing errors for monitoring
 
 ### Validations
 1. **UUID Validation**
@@ -139,6 +151,8 @@ go-loan-service-v3/
 │   │   ├── repository/
 │   │   │   ├── redis_repository.go  # Redis data caching
 │   │   │   └── spanner_repository.go # Spanner data persistence
+│   │   ├── publisher/
+│   │   │   └── pubsub_publisher.go  # Pub/Sub event publishing
 │   │   ├── server/
 │   │   │   └── server.go       # gRPC server implementation
 │   │   └── validator.go        # Business logic and validations
@@ -161,6 +175,7 @@ go-loan-service-v3/
 - UUID stored as bytes with validation rules
 - Numeric fields as appropriate types (double, int64)
 - gRPC service definition
+- Event message definitions for Pub/Sub
 
 ### Repository Layer (`internal/credit_enquiry/repository`)
 - Redis connection management for caching
@@ -169,6 +184,12 @@ go-loan-service-v3/
 - Key management using UUID strings
 - Schema-based storage with request metadata
 - Request comparison using proto.Equal
+
+### Publisher Layer (`internal/credit_enquiry/publisher`)
+- Pub/Sub client management
+- Event publishing functionality
+- Error handling and retry logic
+- Message formatting and serialization
 
 ### Service Layer (`internal/credit_enquiry`)
 - Business logic implementation
