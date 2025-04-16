@@ -1,4 +1,4 @@
-package credit_enquiry
+package interfaces
 
 import (
 	"context"

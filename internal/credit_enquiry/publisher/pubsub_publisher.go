@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	creditEnquiryProto "go-loan-service-v3/proto"
 
 	"cloud.google.com/go/pubsub"
@@ -20,7 +21,7 @@ type pubsubPublisher struct {
 }
 
 // NewPubSubPublisher creates a new Pub/Sub publisher
-func NewPubSubPublisher(ctx context.Context, projectID, topicID string) (Publisher, error) {
+func NewPubSubPublisher(ctx context.Context, projectID, topicID string) (interfaces.CreditEnquiryPublisher, error) {
 	client, err := pubsub.NewClient(ctx, projectID)
 	if err != nil {
 		return nil, err
