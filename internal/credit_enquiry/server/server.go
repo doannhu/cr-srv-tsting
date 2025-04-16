@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"go-loan-service-v3/internal/credit_enquiry"
-	"go-loan-service-v3/internal/credit_enquiry/entity"
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	pb "go-loan-service-v3/proto"
 
@@ -18,13 +17,13 @@ import (
 type CreditEnquiryServer struct {
 	pb.UnimplementedCreditEnquiryServiceServer
 	validator   credit_enquiry.Validator
-	redisRepo   entity.RequestCacheRepository
-	spannerRepo entity.CreditEnquiryRepository
+	redisRepo   interfaces.RequestCacheRepository
+	spannerRepo interfaces.CreditEnquiryRepository
 	publisher   interfaces.CreditEnquiryPublisher
 }
 
 // NewCreditEnquiryServer creates a new instance of the credit enquiry server
-func NewCreditEnquiryServer(validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository, publisher interfaces.CreditEnquiryPublisher) *CreditEnquiryServer {
+func NewCreditEnquiryServer(validator credit_enquiry.Validator, redisRepo interfaces.RequestCacheRepository, spannerRepo interfaces.CreditEnquiryRepository, publisher interfaces.CreditEnquiryPublisher) *CreditEnquiryServer {
 	return &CreditEnquiryServer{
 		validator:   validator,
 		redisRepo:   redisRepo,
@@ -92,7 +91,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 }
 
 // StartServer starts the gRPC server
-func StartServer(port string, validator credit_enquiry.Validator, redisRepo entity.RequestCacheRepository, spannerRepo entity.CreditEnquiryRepository, publisher interfaces.CreditEnquiryPublisher) error {
+func StartServer(port string, validator credit_enquiry.Validator, redisRepo interfaces.RequestCacheRepository, spannerRepo interfaces.CreditEnquiryRepository, publisher interfaces.CreditEnquiryPublisher) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/entity"
+	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	creditEnquiryProto "go-loan-service-v3/proto"
 
 	"github.com/go-redis/redis/v8"
@@ -25,7 +26,7 @@ type redisRepository struct {
 }
 
 // NewRedisRepository creates a new Redis repository instance
-func NewRedisRepository(client *redis.Client) entity.RequestCacheRepository {
+func NewRedisRepository(client *redis.Client) interfaces.RequestCacheRepository {
 	return &redisRepository{
 		client: client,
 	}

@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"go-loan-service-v3/internal/credit_enquiry/entity"
+	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	creditEnquiryProto "go-loan-service-v3/proto"
 
 	"cloud.google.com/go/spanner"
@@ -18,7 +18,7 @@ type spannerRepository struct {
 }
 
 // NewSpannerRepository creates a new Spanner repository instance
-func NewSpannerRepository(client *spanner.Client) entity.CreditEnquiryRepository {
+func NewSpannerRepository(client *spanner.Client) interfaces.CreditEnquiryRepository {
 	return &spannerRepository{
 		client: client,
 	}

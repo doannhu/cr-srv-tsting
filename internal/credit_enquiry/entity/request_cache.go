@@ -1,7 +1,6 @@
 package entity
 
 import (
-	"context"
 	"time"
 
 	"go-loan-service-v3/proto"
@@ -15,20 +14,4 @@ type RequestCache struct {
 	RequestDataPayload  *proto.CreditEnquiryRequest `json:"request_data_payload"`
 	ResponseDataPayload string                      `json:"response_data_payload"`
 	UpdatedTime         time.Time                   `json:"updated_time"`
-}
-
-// RequestCacheRepository defines the interface for request cache operations
-type RequestCacheRepository interface {
-	// SaveRequest saves a credit enquiry request to Redis
-	SaveRequest(request *proto.CreditEnquiryRequest) error
-	// GetRequest retrieves a credit enquiry request from Redis by request ID
-	GetRequest(requestID string) (*proto.CreditEnquiryRequest, error)
-}
-
-// CreditEnquiryRepository defines the interface for credit enquiry operations
-type CreditEnquiryRepository interface {
-	// SaveCreditEnquiry saves a credit enquiry request to the repository
-	SaveCreditEnquiry(ctx context.Context, request *proto.CreditEnquiryRequest) error
-	// GetCreditEnquiry retrieves a credit enquiry request from the repository
-	GetCreditEnquiry(ctx context.Context, requestID string, version string) (*proto.CreditEnquiryRequest, error)
 }
