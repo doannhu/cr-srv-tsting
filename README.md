@@ -307,4 +307,52 @@ docker-compose up
 
 ### Networks
 - Services communicate through a bridge network
-- Redis is accessible to the server at hostname `redis` 
+- Redis is accessible to the server at hostname `redis`
+
+## Resilience Patterns
+
+### Retry Pattern
+The service implements a retry pattern with exponential backoff for Spanner operations to handle temporary failures and improve resilience.
+
+#### Configuration
+```go
+type RetryConfig struct {
+    MaxAttempts int           // Maximum number of retry attempts (default: 5)
+    BaseDelay   time.Duration // Initial delay between retries (default: 100ms)
+    MaxDelay    time.Duration // Maximum delay between retries (default: 5s)
+}
+```
+
+#### Retry Behavior
+- Maximum of 5 retry attempts
+- Exponential backoff with base delay of 100ms
+- Maximum delay capped at 5 seconds
+- Respects context cancellation
+- Detailed logging of retry attempts
+
+#### Retry Sequence
+1. First attempt: Immediate
+2. Second attempt: After 100ms
+3. Third attempt: After 200ms
+4. Fourth attempt: After 400ms
+5. Fifth attempt: After 800ms
+
+#### Implementation
+The retry pattern is implemented in the Spanner repository for:
+- Checking existing records
+- Saving credit enquiries
+- Retrieving credit enquiries
+
+#### Error Handling
+- Temporary failures trigger retries
+- Permanent failures return immediately
+- Context cancellation stops retries
+- Detailed error messages with operation context
+
+#### Testing
+Comprehensive test coverage for:
+- Success on first attempt
+- Success after multiple retries
+- Maximum attempts reached
+- Context cancellation
+- Exponential backoff timing 
