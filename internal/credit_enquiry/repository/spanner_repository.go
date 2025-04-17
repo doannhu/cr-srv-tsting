@@ -163,3 +163,9 @@ func (r *spannerRepository) GetCreditEnquiry(ctx context.Context, requestID stri
 
 	return result, nil
 }
+
+// SaveRequest implements CreditEnquiryRepository
+func (r *spannerRepository) SaveRequest(req *creditEnquiryProto.CreditEnquiryRequest) error {
+	// For Spanner, we'll just call SaveCreditEnquiry with a background context
+	return r.SaveCreditEnquiry(context.Background(), req)
+}

@@ -32,10 +32,8 @@ func NewRedisRepository(client *redis.Client) interfaces.RequestCacheRepository 
 	}
 }
 
-// SaveRequest implements RequestCacheRepository
-func (r *redisRepository) SaveRequest(request *creditEnquiryProto.CreditEnquiryRequest) error {
-	ctx := context.Background()
-
+// SaveCreditEnquiry implements RequestCacheRepository
+func (r *redisRepository) SaveCreditEnquiry(ctx context.Context, request *creditEnquiryProto.CreditEnquiryRequest) error {
 	// Convert request ID bytes to UUID string
 	requestUUID, err := uuid.FromBytes(request.RequestId)
 	if err != nil {
@@ -88,10 +86,8 @@ func (r *redisRepository) SaveRequest(request *creditEnquiryProto.CreditEnquiryR
 	return nil
 }
 
-// GetRequest implements RequestCacheRepository
-func (r *redisRepository) GetRequest(requestID string) (*creditEnquiryProto.CreditEnquiryRequest, error) {
-	ctx := context.Background()
-
+// GetCreditEnquiry implements RequestCacheRepository
+func (r *redisRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*creditEnquiryProto.CreditEnquiryRequest, error) {
 	// Get from Redis
 	key := keyPrefix + requestID
 	val, err := r.client.Get(ctx, key).Result()

@@ -83,6 +83,11 @@ func (p *pubsubPublisher) PublishCreditEnquiryEvent(ctx context.Context, request
 		Data:            eventData,
 	}
 
+	// Validate event
+	if err := event.Validate(); err != nil {
+		return err
+	}
+
 	// Marshal event to protobuf
 	data, err := proto.Marshal(event)
 	if err != nil {

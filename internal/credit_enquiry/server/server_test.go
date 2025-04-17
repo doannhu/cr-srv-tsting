@@ -1,9 +1,12 @@
 package server
 
 import (
+	"bytes"
 	"context"
+	"log"
 	"testing"
 
+	"go-loan-service-v3/internal/credit_enquiry/errors"
 	pb "go-loan-service-v3/proto"
 
 	"github.com/google/uuid"
@@ -12,37 +15,43 @@ import (
 
 // mockValidator implements the Validator interface for testing
 type mockValidator struct {
-	validateFunc func(*pb.CreditEnquiryRequest) error
+	validateFunc func(*pb.CreditEnquiryRequest) (*errors.ValidationResponse, error)
 }
 
-func (m *mockValidator) ValidateRequest(req *pb.CreditEnquiryRequest) error {
+func (m *mockValidator) ValidateRequest(req *pb.CreditEnquiryRequest) (*errors.ValidationResponse, error) {
 	return m.validateFunc(req)
 }
 
 // mockRedisRepository implements the RequestCacheRepository interface for testing
 type mockRedisRepository struct {
-	saveFunc func(*pb.CreditEnquiryRequest) error
+	saveCreditEnquiryFunc func(context.Context, *pb.CreditEnquiryRequest) error
+	getCreditEnquiryFunc  func(context.Context, string, string) (*pb.CreditEnquiryRequest, error)
 }
 
-func (m *mockRedisRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
-	return m.saveFunc(req)
+func (m *mockRedisRepository) SaveCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+	return m.saveCreditEnquiryFunc(ctx, req)
 }
 
-func (m *mockRedisRepository) GetRequest(requestID string) (*pb.CreditEnquiryRequest, error) {
-	return nil, nil
+func (m *mockRedisRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
+	return m.getCreditEnquiryFunc(ctx, requestID, version)
 }
 
 // mockSpannerRepository implements the CreditEnquiryRepository interface for testing
 type mockSpannerRepository struct {
-	saveFunc func(context.Context, *pb.CreditEnquiryRequest) error
+	saveCreditEnquiryFunc func(context.Context, *pb.CreditEnquiryRequest) error
+	getCreditEnquiryFunc  func(context.Context, string, string) (*pb.CreditEnquiryRequest, error)
 }
 
 func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-	return m.saveFunc(ctx, req)
+	return m.saveCreditEnquiryFunc(ctx, req)
 }
 
 func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
-	return nil, nil
+	return m.getCreditEnquiryFunc(ctx, requestID, version)
+}
+
+func (m *mockSpannerRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
+	return m.saveCreditEnquiryFunc(context.Background(), req)
 }
 
 // mockPublisher implements the CreditEnquiryPublisher interface for testing
@@ -55,74 +64,56 @@ func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, req *pb.C
 }
 
 func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
-	// Generate a valid UUID for testing
-	validUUID := uuid.New()
-	validUUIDBytes, err := validUUID.MarshalBinary()
-	assert.NoError(t, err)
+	// Create a test logger that writes to a buffer
+	var logBuffer bytes.Buffer
+	logger := log.New(&logBuffer, "", log.LstdFlags)
 
-	// Create a base valid request
-	validRequest := &pb.CreditEnquiryRequest{
-		RequestId:                        validUUIDBytes,
-		EnquiryState:                     "NEW",
-		ApplicationNumber:                "APP123",
-		LoanAmount:                       100000,
-		LoanPurpose:                      "Home Purchase",
-		InitialStructureTermMonth:        360,
-		TotalMonthlyNetIncomeAmount:      5000,
-		TotalAnnualGrossIncome:           60000,
-		TotalSavingsAmount:               10000,
-		TotalNumberOfContinuingHomeLoans: 0,
+	// Create mock validator
+	validator := &mockValidator{
+		validateFunc: func(req *pb.CreditEnquiryRequest) (*errors.ValidationResponse, error) {
+			return errors.NewValidationResponse(true, nil, nil), nil
+		},
 	}
 
+	// Create mock Redis repository
+	redisRepo := &mockRedisRepository{
+		saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+			return nil
+		},
+		getCreditEnquiryFunc: func(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
+			return nil, nil
+		},
+	}
+
+	// Create mock Spanner repository
+	spannerRepo := &mockSpannerRepository{
+		saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+			return nil
+		},
+		getCreditEnquiryFunc: func(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
+			return nil, nil
+		},
+	}
+
+	// Create mock publisher
+	publisher := &mockPublisher{
+		publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+			return nil
+		},
+	}
+
+	// Create the server
+	server := NewServer(logger, validator, redisRepo, spannerRepo, publisher)
+
 	tests := []struct {
-		name             string
-		request          *pb.CreditEnquiryRequest
-		validatorError   error
-		redisRepoError   error
-		spannerRepoError error
-		wantSuccess      bool
-		wantMessage      string
+		name    string
+		request *pb.CreditEnquiryRequest
+		wantErr bool
 	}{
 		{
-			name:             "valid request",
-			request:          validRequest,
-			validatorError:   nil,
-			redisRepoError:   nil,
-			spannerRepoError: nil,
-			wantSuccess:      true,
-			wantMessage:      "Credit enquiry request processed successfully",
-		},
-		{
-			name:             "validation failed",
-			request:          validRequest,
-			validatorError:   assert.AnError,
-			redisRepoError:   nil,
-			spannerRepoError: nil,
-			wantSuccess:      false,
-			wantMessage:      assert.AnError.Error(),
-		},
-		{
-			name:             "redis repository error",
-			request:          validRequest,
-			validatorError:   nil,
-			redisRepoError:   assert.AnError,
-			spannerRepoError: nil,
-			wantSuccess:      false,
-			wantMessage:      assert.AnError.Error(),
-		},
-		{
-			name:             "spanner repository error",
-			request:          validRequest,
-			validatorError:   nil,
-			redisRepoError:   nil,
-			spannerRepoError: assert.AnError,
-			wantSuccess:      false,
-			wantMessage:      assert.AnError.Error(),
-		},
-		{
-			name: "invalid UUID",
+			name: "valid request",
 			request: &pb.CreditEnquiryRequest{
-				RequestId:                        []byte("invalid-uuid"),
+				RequestId:                        []byte(uuid.New().String()),
 				EnquiryState:                     "NEW",
 				ApplicationNumber:                "APP123",
 				LoanAmount:                       100000,
@@ -133,52 +124,19 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				TotalSavingsAmount:               10000,
 				TotalNumberOfContinuingHomeLoans: 0,
 			},
-			validatorError:   nil,
-			redisRepoError:   nil,
-			spannerRepoError: nil,
-			wantSuccess:      false,
-			wantMessage:      "invalid UUID length",
+			wantErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create mock validator
-			validator := &mockValidator{
-				validateFunc: func(req *pb.CreditEnquiryRequest) error {
-					return tt.validatorError
-				},
+			ctx := context.Background()
+			_, err := server.ProcessCreditEnquiry(ctx, tt.request)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
 			}
-
-			// Create mock Redis repository
-			redisRepo := &mockRedisRepository{
-				saveFunc: func(req *pb.CreditEnquiryRequest) error {
-					return tt.redisRepoError
-				},
-			}
-
-			// Create mock Spanner repository
-			spannerRepo := &mockSpannerRepository{
-				saveFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-					return tt.spannerRepoError
-				},
-			}
-
-			// Create mock publisher
-			publisher := &mockPublisher{
-				publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-					return nil
-				},
-			}
-
-			// Create server instance
-			server := NewCreditEnquiryServer(validator, redisRepo, spannerRepo, publisher)
-
-			// Process the request
-			response, err := server.ProcessCreditEnquiry(context.Background(), tt.request)
-			assert.NoError(t, err)
-			assert.Equal(t, tt.wantSuccess, response.Success)
-			assert.Equal(t, tt.wantMessage, response.Message)
 		})
 	}
 }

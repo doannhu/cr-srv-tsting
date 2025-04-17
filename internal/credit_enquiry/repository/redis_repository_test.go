@@ -32,7 +32,7 @@ func setupTestRedis(t *testing.T) (*redis.Client, func()) {
 	}
 }
 
-func TestRedisRepository_SaveRequest_CompareRequests(t *testing.T) {
+func TestRedisRepository_SaveCreditEnquiry_CompareRequests(t *testing.T) {
 	client, cleanup := setupTestRedis(t)
 	defer cleanup()
 
@@ -134,7 +134,7 @@ func TestRedisRepository_SaveRequest_CompareRequests(t *testing.T) {
 			}
 
 			// Test saving the incoming request
-			err := repo.SaveRequest(tt.incomingReq)
+			err := repo.SaveCreditEnquiry(context.Background(), tt.incomingReq)
 
 			if tt.expectedError != "" {
 				assert.EqualError(t, err, tt.expectedError)
@@ -153,6 +153,74 @@ func TestRedisRepository_SaveRequest_CompareRequests(t *testing.T) {
 				assert.Equal(t, validUUIDStr, savedEntry.RequestID)
 				assert.Equal(t, tt.incomingReq.EnquiryState, savedEntry.RequestDataPayload.EnquiryState)
 				assert.Equal(t, tt.incomingReq.LoanAmount, savedEntry.RequestDataPayload.LoanAmount)
+			}
+		})
+	}
+}
+
+func TestRedisRepository_GetCreditEnquiry(t *testing.T) {
+	client, cleanup := setupTestRedis(t)
+	defer cleanup()
+
+	repo := NewRedisRepository(client)
+
+	// Generate a valid UUID
+	validUUID := uuid.New()
+	validUUIDBytes, err := validUUID.MarshalBinary()
+	assert.NoError(t, err)
+	validUUIDStr := validUUID.String()
+
+	// Create test request
+	testRequest := &creditEnquiryProto.CreditEnquiryRequest{
+		RequestId:                        validUUIDBytes,
+		EnquiryState:                     "NEW",
+		ApplicationNumber:                "APP123",
+		LoanAmount:                       100000,
+		LoanPurpose:                      "Home Purchase",
+		InitialStructureTermMonth:        360,
+		TotalMonthlyNetIncomeAmount:      5000,
+		TotalAnnualGrossIncome:           60000,
+		TotalSavingsAmount:               10000,
+		TotalNumberOfContinuingHomeLoans: 0,
+	}
+
+	// Save test request
+	err = repo.SaveCreditEnquiry(context.Background(), testRequest)
+	assert.NoError(t, err)
+
+	// Test cases
+	tests := []struct {
+		name          string
+		requestID     string
+		version       string
+		expectedError string
+	}{
+		{
+			name:          "valid request",
+			requestID:     validUUIDStr,
+			version:       "1.0",
+			expectedError: "",
+		},
+		{
+			name:          "non-existent request",
+			requestID:     "non-existent",
+			version:       "1.0",
+			expectedError: "request not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req, err := repo.GetCreditEnquiry(context.Background(), tt.requestID, tt.version)
+
+			if tt.expectedError != "" {
+				assert.EqualError(t, err, tt.expectedError)
+				assert.Nil(t, req)
+			} else {
+				assert.NoError(t, err)
+				assert.NotNil(t, req)
+				assert.Equal(t, testRequest.EnquiryState, req.EnquiryState)
+				assert.Equal(t, testRequest.LoanAmount, req.LoanAmount)
 			}
 		})
 	}

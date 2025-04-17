@@ -6,8 +6,9 @@ import (
 	"go-loan-service-v3/proto"
 )
 
-// CreditEnquiryRepository defines the interface for credit enquiry operations
+// CreditEnquiryRepository interface defines the contract for credit enquiry storage
 type CreditEnquiryRepository interface {
+	SaveRequest(request *proto.CreditEnquiryRequest) error
 	// SaveCreditEnquiry saves a credit enquiry request to the repository
 	SaveCreditEnquiry(ctx context.Context, request *proto.CreditEnquiryRequest) error
 	// GetCreditEnquiry retrieves a credit enquiry request from the repository
