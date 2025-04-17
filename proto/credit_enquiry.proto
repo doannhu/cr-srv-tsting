@@ -2,12 +2,13 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "go-loan-service-v3/proto";
-
 import "validate/validate.proto";
 
+option go_package = "go-loan-service-v3/proto";
+
+// CreditEnquiryRequest represents a loan request
 message CreditEnquiryRequest {
-    bytes request_id = 1 [(validate.rules).bytes = {ignore_empty: true, len: 16}];  // UUID v4
+    bytes request_id = 1 [(validate.rules).bytes.len = 16];
     string enquiry_state = 2;
     string application_number = 3;
     double loan_amount = 4;
@@ -19,6 +20,7 @@ message CreditEnquiryRequest {
     int64 total_number_of_continuing_home_loans = 10;
 }
 
+// CreditEnquiryResponse represents the response to a loan request
 message CreditEnquiryResponse {
     bool success = 1;
     string message = 2;

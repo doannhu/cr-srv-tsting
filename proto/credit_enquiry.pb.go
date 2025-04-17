@@ -22,9 +22,10 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// CreditEnquiryRequest represents a loan request
 type CreditEnquiryRequest struct {
 	state                            protoimpl.MessageState `protogen:"open.v1"`
-	RequestId                        []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"` // UUID v4
+	RequestId                        []byte                 `protobuf:"bytes,1,opt,name=request_id,json=requestId,proto3" json:"request_id,omitempty"`
 	EnquiryState                     string                 `protobuf:"bytes,2,opt,name=enquiry_state,json=enquiryState,proto3" json:"enquiry_state,omitempty"`
 	ApplicationNumber                string                 `protobuf:"bytes,3,opt,name=application_number,json=applicationNumber,proto3" json:"application_number,omitempty"`
 	LoanAmount                       float64                `protobuf:"fixed64,4,opt,name=loan_amount,json=loanAmount,proto3" json:"loan_amount,omitempty"`
@@ -138,6 +139,7 @@ func (x *CreditEnquiryRequest) GetTotalNumberOfContinuingHomeLoans() int64 {
 	return 0
 }
 
+// CreditEnquiryResponse represents the response to a loan request
 type CreditEnquiryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
@@ -202,10 +204,10 @@ var File_proto_credit_enquiry_proto protoreflect.FileDescriptor
 
 const file_proto_credit_enquiry_proto_rawDesc = "" +
 	"\n" +
-	"\x1aproto/credit_enquiry.proto\x12\x05proto\x1a\x17validate/validate.proto\"\x9d\x04\n" +
-	"\x14CreditEnquiryRequest\x12(\n" +
+	"\x1aproto/credit_enquiry.proto\x12\x05proto\x1a\x17validate/validate.proto\"\x9b\x04\n" +
+	"\x14CreditEnquiryRequest\x12&\n" +
 	"\n" +
-	"request_id\x18\x01 \x01(\fB\t\xfaB\x06z\x04h\x10p\x01R\trequestId\x12#\n" +
+	"request_id\x18\x01 \x01(\fB\a\xfaB\x04z\x02h\x10R\trequestId\x12#\n" +
 	"\renquiry_state\x18\x02 \x01(\tR\fenquiryState\x12-\n" +
 	"\x12application_number\x18\x03 \x01(\tR\x11applicationNumber\x12\x1f\n" +
 	"\vloan_amount\x18\x04 \x01(\x01R\n" +
