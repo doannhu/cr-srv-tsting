@@ -155,6 +155,9 @@ go-loan-service-v3/
 │   │   │   └── pubsub_publisher.go  # Pub/Sub event publishing
 │   │   ├── server/
 │   │   │   └── server.go       # gRPC server implementation
+│   │   ├── utils/
+│   │   │   ├── retry.go        # Retry pattern implementation
+│   │   │   └── retry_test.go   # Retry pattern tests
 │   │   └── validator.go        # Business logic and validations
 │   └── config/
 │       └── config.go           # Configuration management
