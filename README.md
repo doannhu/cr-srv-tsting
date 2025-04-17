@@ -359,3 +359,82 @@ Comprehensive test coverage for:
 - Maximum attempts reached
 - Context cancellation
 - Exponential backoff timing 
+
+## Error Handling and Response Flow
+
+The service implements a robust error handling system that provides detailed validation feedback to the requesting service. The error handling approach includes:
+
+### Validation Response Structure
+
+```go
+type ValidationResponse struct {
+    Success bool              `json:"success"`
+    Error   *ValidationError  `json:"error,omitempty"`
+    Data    interface{}       `json:"data,omitempty"`
+}
+
+type ValidationError struct {
+    Code    string                 `json:"code"`
+    Message string                 `json:"message"`
+    Details map[string]interface{} `json:"details,omitempty"`
+}
+```
+
+### Error Codes
+
+The service uses the following error codes:
+
+- `ERR_BAD_REQUEST`: Invalid request parameters
+- `ERR_INVALID_UUID`: Invalid UUID format or version
+- `ERR_INVALID_LENGTH`: Field length exceeds maximum allowed
+- `ERR_INVALID_NUMERIC`: Invalid numeric value (negative, zero, or exceeds maximum)
+- `ERR_REQUIRED_FIELD`: Required field is missing
+
+### Validation Process
+
+1. **Request Validation**:
+   - UUID validation (format, version, length)
+   - Required field validation
+   - String length validation
+   - Numeric field validation
+
+2. **Error Response**:
+   - Each validation error includes:
+     - Error code
+     - Descriptive message
+     - Additional context in the details field
+
+3. **Example Error Response**:
+```json
+{
+    "success": false,
+    "error": {
+        "code": "ERR_INVALID_LENGTH",
+        "message": "enquiry state exceeds maximum length of 40",
+        "details": {
+            "field": "enquiry_state",
+            "max": 40,
+            "actual": 45
+        }
+    }
+}
+```
+
+### Success Response
+
+On successful validation, the service returns:
+
+```json
+{
+    "success": true,
+    "data": {
+        // Request data
+    }
+}
+```
+
+This approach ensures that:
+- Clients receive clear, actionable error messages
+- Error details include specific field information
+- Validation rules are consistently applied
+- The response format is standardized 
