@@ -242,6 +242,8 @@ go-loan-service-v3/
 
 ## Testing
 
+The service includes comprehensive test coverage:
+
 ### Unit Tests
 1. **UUID Validation Tests**
    - Valid UUID v4
@@ -272,10 +274,46 @@ go-loan-service-v3/
    - Response formatting
 
 ### Test Coverage
-   - Mock repository for Redis operations
-   - Error case coverage
-   - Logging verification
-   - Comprehensive assertion checks
+- Server coverage: 94.7%
+- Validator coverage: 93.9%
+- Repository coverage: 100%
+
+### Test Coverage Details
+- Server component: 94.7% coverage
+  - ProcessCreditEnquiry: 92.9%
+  - NewServer and StartServer: Initialization functions (typically not unit tested)
+
+- Validator component: 93.9% coverage
+  - validateNumericFields: 100%
+  - validateStringLengths: 84.6%
+  - validateUUID: 90%
+  - NewValidator and ValidateRequest: Initialization functions (typically not unit tested)
+
+### Integration Tests
+- Spanner integration tests
+- Redis integration tests
+- Pub/Sub integration tests
+
+### Running Tests
+```bash
+# Run all tests
+go test ./...
+
+# Run tests with coverage
+go test -cover ./...
+
+# Generate coverage profile
+go test -coverprofile=coverage.out ./...
+
+# View coverage in browser
+go tool cover -html=coverage.out
+```
+
+### Integration Test Setup
+Integration tests use Testcontainers to spin up required infrastructure:
+- Redis container for caching
+- Spanner emulator for database operations
+- Pub/Sub emulator for event publishing
 
 ## Dependencies
 
