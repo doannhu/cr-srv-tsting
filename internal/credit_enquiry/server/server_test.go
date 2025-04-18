@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"go-loan-service-v3/internal/credit_enquiry/entity"
 	cerrors "go-loan-service-v3/internal/credit_enquiry/errors"
 	pb "go-loan-service-v3/proto"
 
@@ -66,6 +67,19 @@ func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, req *pb.C
 	return m.publishFunc(ctx, req)
 }
 
+// mockSopRepository implements the SopRepository interface for testing
+type mockSopRepository struct {
+	saveSopFunc func(context.Context, *entity.Sop) error
+}
+
+func (m *mockSopRepository) SaveSop(ctx context.Context, sop *entity.Sop) error {
+	return m.saveSopFunc(ctx, sop)
+}
+
+func (m *mockSopRepository) GetSop(ctx context.Context, creditEnquiryID string, version string) (*entity.Sop, error) {
+	return nil, nil
+}
+
 func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	// Create a test logger that writes to a buffer
 	var logBuffer bytes.Buffer
@@ -78,7 +92,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	tests := []struct {
 		name        string
 		request     *pb.CreditEnquiryRequest
-		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher)
+		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository)
 		wantErr     bool
 		wantSuccess bool
 		wantCode    string
@@ -98,7 +112,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				TotalSavingsAmount:               10000,
 				TotalNumberOfContinuingHomeLoans: 0,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -119,19 +133,24 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return nil
 					},
 				}
-				return validator, redisRepo, spannerRepo, publisher
+				sopRepo := &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
+				return validator, redisRepo, spannerRepo, publisher, sopRepo
 			},
 			wantErr:     false,
 			wantSuccess: true,
-			wantMessage: "Credit enquiry request processed successfully",
+			wantMessage: "Credit enquiry processed successfully",
 		},
 		{
 			name: "empty request ID",
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte{},
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -143,8 +162,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte("invalid-uuid"),
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -156,7 +175,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(false, cerrors.NewValidationError(
@@ -166,7 +185,11 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						), nil), nil
 					},
 				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -178,13 +201,17 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return nil, errors.New("internal error")
 					},
 				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -196,7 +223,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -207,7 +234,11 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return errors.New("redis error")
 					},
 				}
-				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}
+				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -219,7 +250,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -235,7 +266,11 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return errors.New("spanner error")
 					},
 				}
-				return validator, redisRepo, spannerRepo, &mockPublisher{}
+				return validator, redisRepo, spannerRepo, &mockPublisher{}, &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -243,11 +278,53 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			wantMessage: "Failed to save request to database",
 		},
 		{
+			name: "spanner retry success after failures",
+			request: &pb.CreditEnquiryRequest{
+				RequestId: validUUIDBytes,
+			},
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+				validator := &mockValidator{
+					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
+						return cerrors.NewValidationResponse(true, nil, nil), nil
+					},
+				}
+				redisRepo := &mockRedisRepository{
+					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+						return nil
+					},
+				}
+				attempt := 0
+				spannerRepo := &mockSpannerRepository{
+					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+						attempt++
+						if attempt < 3 {
+							return errors.New("temporary spanner error")
+						}
+						return nil
+					},
+				}
+				publisher := &mockPublisher{
+					publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
+						return nil
+					},
+				}
+				sopRepo := &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
+				return validator, redisRepo, spannerRepo, publisher, sopRepo
+			},
+			wantErr:     false,
+			wantSuccess: true,
+			wantMessage: "Credit enquiry processed successfully",
+		},
+		{
 			name: "publisher failure - request still succeeds",
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -268,7 +345,12 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return errors.New("publisher error")
 					},
 				}
-				return validator, redisRepo, spannerRepo, publisher
+				sopRepo := &mockSopRepository{
+					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+						return nil
+					},
+				}
+				return validator, redisRepo, spannerRepo, publisher, sopRepo
 			},
 			wantErr:     false,
 			wantSuccess: true,
@@ -280,10 +362,10 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mocks
-			validator, redisRepo, spannerRepo, publisher := tt.setupMocks()
+			validator, redisRepo, spannerRepo, publisher, sopRepo := tt.setupMocks()
 
 			// Create the server
-			server := NewServer(logger, validator, redisRepo, spannerRepo, publisher)
+			server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher)
 
 			// Process the request
 			ctx := context.Background()
@@ -313,8 +395,9 @@ func TestNewServer(t *testing.T) {
 	redisRepo := &mockRedisRepository{}
 	spannerRepo := &mockSpannerRepository{}
 	publisher := &mockPublisher{}
+	sopRepo := &mockSopRepository{}
 
-	server := NewServer(logger, validator, redisRepo, spannerRepo, publisher)
+	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher)
 
 	assert.NotNil(t, server)
 	assert.Equal(t, logger, server.logger)
@@ -322,6 +405,7 @@ func TestNewServer(t *testing.T) {
 	assert.Equal(t, redisRepo, server.redisRepo)
 	assert.Equal(t, spannerRepo, server.spannerRepo)
 	assert.Equal(t, publisher, server.publisher)
+	assert.Equal(t, sopRepo, server.sopRepo)
 }
 
 func TestStartServer(t *testing.T) {
@@ -352,10 +436,15 @@ func TestStartServer(t *testing.T) {
 			return nil
 		},
 	}
+	sopRepo := &mockSopRepository{
+		saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
+			return nil
+		},
+	}
 
 	// Start server in a goroutine
 	go func() {
-		err := StartServer("50051", validator, redisRepo, spannerRepo, publisher)
+		err := StartServer("50051", validator, redisRepo, spannerRepo, sopRepo, publisher)
 		assert.NoError(t, err)
 	}()
 
@@ -396,6 +485,6 @@ func TestStartServer(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Test invalid port
-	err = StartServer("invalid", validator, redisRepo, spannerRepo, publisher)
+	err = StartServer("invalid", validator, redisRepo, spannerRepo, sopRepo, publisher)
 	assert.Error(t, err)
 }

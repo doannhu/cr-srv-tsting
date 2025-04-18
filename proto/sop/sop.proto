@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package sop;
+
+option go_package = "go-loan-service-v3/proto/sop";
+
+// SOPRequest represents the request to get consolidated SOP data
+message SOPRequest {
+    string credit_enquiry_id = 1;
+    string credit_enquiry_version = 2;
+}
+
+// SOPResponse represents the consolidated SOP data
+message SOPResponse {
+    string sop_assessment_id = 1;
+    string serviceability_assessment_id = 2;
+    double total_monthly_net_income_amount = 3;
+    double total_annual_gross_income = 4;
+    double total_savings_amount = 5;
+    int32 total_number_of_continuing_home_loans = 6;
+}
+
+// SOPService defines the interface for SOP-related operations
+service SOPService {
+    // GetConsolidatedSOP retrieves the consolidated Statement of Position
+    rpc GetConsolidatedSOP(SOPRequest) returns (SOPResponse) {}
+} 
