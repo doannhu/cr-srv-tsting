@@ -1,0 +1,22 @@
+mode: set
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:33.24,41.2 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:44.138,48.29 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:48.29,55.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:56.2,56.30 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:56.30,63.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:64.2,64.57 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:64.57,71.3 2 0
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:74.2,75.16 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:75.16,82.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:84.2,84.29 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:84.29,91.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:94.2,94.64 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:94.64,101.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:104.2,104.66 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:104.66,111.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:114.2,114.72 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:114.72,122.3 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:124.2,128.8 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:132.207,134.16 2 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:134.16,136.3 1 1
+/Users/user/Documents/go-loan-service-v3/internal/credit_enquiry/server/server.go:138.2,144.30 6 1

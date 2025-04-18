@@ -135,8 +135,9 @@ func StartServer(port string, validator interfaces.Validator, redisRepo interfac
 		return err
 	}
 
+	logger := log.Default()
 	grpcServer := grpc.NewServer()
-	server := NewServer(nil, validator, redisRepo, spannerRepo, publisher)
+	server := NewServer(logger, validator, redisRepo, spannerRepo, publisher)
 	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)
