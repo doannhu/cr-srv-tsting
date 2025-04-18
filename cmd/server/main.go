@@ -8,6 +8,7 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry"
 	"go-loan-service-v3/internal/credit_enquiry/publisher"
 	"go-loan-service-v3/internal/credit_enquiry/repository"
+	"go-loan-service-v3/internal/credit_enquiry/repository/sop"
 	"go-loan-service-v3/internal/credit_enquiry/server"
 
 	"cloud.google.com/go/spanner"
@@ -57,9 +58,10 @@ func main() {
 	validator := credit_enquiry.NewValidator(log.New(os.Stdout, "", log.LstdFlags))
 	redisRepo := repository.NewRedisRepository(redisClient)
 	spannerRepo := repository.NewSpannerRepository(spannerClient)
+	sopRepo := sop.NewSpannerSopRepository(spannerClient)
 
 	// Start the gRPC server
-	if err := server.StartServer(serverPort, validator, redisRepo, spannerRepo, pubsubPublisher); err != nil {
+	if err := server.StartServer(serverPort, validator, redisRepo, spannerRepo, sopRepo, pubsubPublisher); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
 }
