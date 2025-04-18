@@ -101,6 +101,33 @@ Required variables in `variables.tf`:
    - Continues processing even if event publishing fails
    - Logs any publishing errors for monitoring
 
+## Integration Tests
+
+The service includes integration tests for both Redis and Spanner repositories using Testcontainers. These tests ensure that the repositories work correctly with their respective databases.
+
+### Redis Integration Tests
+- Tests saving and retrieving credit enquiries from Redis
+- Verifies cache expiration functionality
+- Uses Redis Testcontainer for isolated testing
+
+### Spanner Integration Tests
+- Tests saving and retrieving credit enquiries from Spanner
+- Verifies error handling for non-existent requests
+- Uses Spanner emulator Testcontainer for isolated testing
+
+### Running Integration Tests
+To run the integration tests:
+
+```bash
+# Run Redis integration tests
+go test -v ./internal/credit_enquiry/repository/redis_repository.go ./internal/credit_enquiry/repository/redis_integration_test.go
+
+# Run Spanner integration tests
+go test -v ./internal/credit_enquiry/repository/spanner_repository.go ./internal/credit_enquiry/repository/spanner_integration_test.go
+```
+
+Note: The tests require Docker to be running as they use Testcontainers to spin up isolated database instances for testing.
+
 ### Validations
 1. **UUID Validation**
    - Request ID must be a valid UUID v4
