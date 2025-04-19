@@ -9,8 +9,10 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	"go-loan-service-v3/internal/credit_enquiry/errors"
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
+	"go-loan-service-v3/internal/credit_enquiry/service/sop"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
 	pb "go-loan-service-v3/proto"
+	sopPb "go-loan-service-v3/proto/sop"
 
 	"github.com/google/uuid"
 	"google.golang.org/grpc"
@@ -25,6 +27,7 @@ type CreditEnquiryServer struct {
 	spannerRepo interfaces.CreditEnquiryRepository
 	sopRepo     interfaces.SopRepository
 	publisher   interfaces.CreditEnquiryPublisher
+	sopService  sop.SOPService
 }
 
 // NewServer creates a new instance of the credit enquiry server
@@ -35,6 +38,7 @@ func NewServer(
 	spannerRepo interfaces.CreditEnquiryRepository,
 	sopRepo interfaces.SopRepository,
 	publisher interfaces.CreditEnquiryPublisher,
+	sopService sop.SOPService,
 ) *CreditEnquiryServer {
 	return &CreditEnquiryServer{
 		logger:      logger,
@@ -43,6 +47,7 @@ func NewServer(
 		spannerRepo: spannerRepo,
 		sopRepo:     sopRepo,
 		publisher:   publisher,
+		sopService:  sopService,
 	}
 }
 
@@ -106,16 +111,16 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 		}, nil
 	}
 
-	// Save the request to Spanner with retry
-	spannerOperation := func() error {
-		return s.spannerRepo.SaveCreditEnquiry(ctx, req)
-	}
-
 	// Configure retry for Spanner operations
 	retryConfig := utils.DefaultRetryConfig()
 	retryConfig.MaxAttempts = 3
 	retryConfig.BaseDelay = 100 * time.Millisecond
 	retryConfig.MaxDelay = 1 * time.Second
+
+	// Save the request to Spanner with retry
+	spannerOperation := func() error {
+		return s.spannerRepo.SaveCreditEnquiry(ctx, req)
+	}
 
 	if err := utils.Retry(ctx, retryConfig, "save credit enquiry to spanner", spannerOperation); err != nil {
 		s.logger.Printf("Failed to save to Spanner: %v", err)
@@ -126,21 +131,36 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 		}, nil
 	}
 
+	// Call SOP service to get consolidated SOP data
+	sopRequest := &sopPb.SOPRequest{
+		CreditEnquiryId:      string(req.RequestId),
+		CreditEnquiryVersion: "1.0",
+	}
+
+	sopResponse, err := s.sopService.GetConsolidatedSOP(ctx, sopRequest)
+	if err != nil {
+		s.logger.Printf("Failed to get SOP data: %v", err)
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "Failed to get SOP data",
+			Code:    errors.ErrServiceError,
+		}, nil
+	}
+
 	// Create and save SOP with retry
-	sop := &entity.Sop{
-		CreditEnquiryID:             string(req.RequestId),
-		CreditEnquiryVersion:        "1.0",
-		TotalMonthlyNetIncomeAmount: &req.TotalMonthlyNetIncomeAmount,
-		TotalAnnualGrossIncome:      &req.TotalAnnualGrossIncome,
-		TotalSavingsAmount:          &req.TotalSavingsAmount,
-		TotalNumberOfContinuingHomeLoans: func() *int32 {
-			val := int32(req.TotalNumberOfContinuingHomeLoans)
-			return &val
-		}(),
+	sopData := &entity.Sop{
+		CreditEnquiryID:                  string(req.RequestId),
+		CreditEnquiryVersion:             "1.0",
+		SopAssessmentID:                  sopResponse.SopAssessmentId,
+		ServiceabilityAssessmentID:       sopResponse.ServiceabilityAssessmentId,
+		TotalMonthlyNetIncomeAmount:      &sopResponse.TotalMonthlyNetIncomeAmount,
+		TotalAnnualGrossIncome:           &sopResponse.TotalAnnualGrossIncome,
+		TotalSavingsAmount:               &sopResponse.TotalSavingsAmount,
+		TotalNumberOfContinuingHomeLoans: &sopResponse.TotalNumberOfContinuingHomeLoans,
 	}
 
 	sopOperation := func() error {
-		return s.sopRepo.SaveSop(ctx, sop)
+		return s.sopRepo.SaveSop(ctx, sopData)
 	}
 
 	if err := utils.Retry(ctx, retryConfig, "save sop to spanner", sopOperation); err != nil {
@@ -170,7 +190,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 }
 
 // StartServer starts the gRPC server
-func StartServer(port string, validator interfaces.Validator, redisRepo interfaces.RequestCacheRepository, spannerRepo interfaces.CreditEnquiryRepository, sopRepo interfaces.SopRepository, publisher interfaces.CreditEnquiryPublisher) error {
+func StartServer(port string, validator interfaces.Validator, redisRepo interfaces.RequestCacheRepository, spannerRepo interfaces.CreditEnquiryRepository, sopRepo interfaces.SopRepository, publisher interfaces.CreditEnquiryPublisher, sopService sop.SOPService) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -178,7 +198,7 @@ func StartServer(port string, validator interfaces.Validator, redisRepo interfac
 
 	logger := log.Default()
 	grpcServer := grpc.NewServer()
-	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher)
+	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
 	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)

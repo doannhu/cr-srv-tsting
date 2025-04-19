@@ -25,6 +25,7 @@ const (
 	ErrStorageError     = "STORAGE_ERROR"
 	ErrPublishError     = "PUBLISH_ERROR"
 	ErrBadRequest       = "BAD_REQUEST"
+	ErrServiceError     = "SERVICE_ERROR"
 )
 
 // NewValidationError creates a new validation error

@@ -2,74 +2,94 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
+	"net"
 	"os"
-
-	"go-loan-service-v3/internal/credit_enquiry"
-	"go-loan-service-v3/internal/credit_enquiry/publisher"
-	"go-loan-service-v3/internal/credit_enquiry/repository"
-	"go-loan-service-v3/internal/credit_enquiry/repository/sop"
-	"go-loan-service-v3/internal/credit_enquiry/server"
-
-	"cloud.google.com/go/spanner"
+	"time"
 
 	"github.com/go-redis/redis/v8"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
+
+	"go-loan-service-v3/internal/credit_enquiry/repository"
+	sopRepo "go-loan-service-v3/internal/credit_enquiry/repository/sop"
+	"go-loan-service-v3/internal/credit_enquiry/server"
+	sopService "go-loan-service-v3/internal/credit_enquiry/service/sop"
+	creditUtils "go-loan-service-v3/internal/credit_enquiry/utils"
+	pb "go-loan-service-v3/proto"
+
+	"cloud.google.com/go/spanner"
 )
 
 func main() {
-	// Get environment variables
-	redisHost := getEnv("REDIS_HOST", "localhost")
-	redisPort := getEnv("REDIS_PORT", "6379")
-	serverPort := getEnv("SERVER_PORT", "50051")
-	spannerProject := getEnv("SPANNER_PROJECT", "")
-	spannerInstance := getEnv("SPANNER_INSTANCE", "")
-	spannerDatabase := getEnv("SPANNER_DATABASE", "")
-	pubsubProject := getEnv("PUBSUB_PROJECT", "")
-	pubsubTopic := getEnv("PUBSUB_TOPIC", "credit-enquiry-events")
-
-	if spannerProject == "" || spannerInstance == "" || spannerDatabase == "" {
-		log.Fatal("Spanner configuration is required. Please set SPANNER_PROJECT, SPANNER_INSTANCE, and SPANNER_DATABASE environment variables")
-	}
-
-	if pubsubProject == "" {
-		log.Fatal("Pub/Sub configuration is required. Please set PUBSUB_PROJECT environment variable")
-	}
-
 	// Initialize Redis client
 	redisClient := redis.NewClient(&redis.Options{
-		Addr: redisHost + ":" + redisPort,
+		Addr:     os.Getenv("REDIS_ADDR"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
 	})
+
+	// Initialize Redis repository
+	redisRepo := repository.NewRedisRepository(redisClient)
 
 	// Initialize Spanner client
 	spannerClient, err := spanner.NewClient(context.Background(),
-		"projects/"+spannerProject+"/instances/"+spannerInstance+"/databases/"+spannerDatabase)
+		fmt.Sprintf("projects/%s/instances/%s/databases/%s",
+			os.Getenv("SPANNER_PROJECT_ID"),
+			os.Getenv("SPANNER_INSTANCE_ID"),
+			os.Getenv("SPANNER_DATABASE_ID"),
+		),
+	)
 	if err != nil {
 		log.Fatalf("Failed to create Spanner client: %v", err)
 	}
 	defer spannerClient.Close()
 
-	// Initialize Pub/Sub publisher
-	pubsubPublisher, err := publisher.NewPubSubPublisher(context.Background(), pubsubProject, pubsubTopic)
-	if err != nil {
-		log.Fatalf("Failed to create Pub/Sub publisher: %v", err)
-	}
-
-	// Initialize validator and repositories
-	validator := credit_enquiry.NewValidator(log.New(os.Stdout, "", log.LstdFlags))
-	redisRepo := repository.NewRedisRepository(redisClient)
+	// Initialize Spanner repository
 	spannerRepo := repository.NewSpannerRepository(spannerClient)
-	sopRepo := sop.NewSpannerSopRepository(spannerClient)
 
-	// Start the gRPC server
-	if err := server.StartServer(serverPort, validator, redisRepo, spannerRepo, sopRepo, pubsubPublisher); err != nil {
-		log.Fatalf("Failed to start server: %v", err)
-	}
-}
+	// Initialize SOP repository
+	sopRepository := sopRepo.NewSpannerSopRepository(spannerClient)
 
-func getEnv(key, defaultValue string) string {
-	value := os.Getenv(key)
-	if value == "" {
-		return defaultValue
+	// Initialize SOP service client
+	sopConn, err := grpc.Dial(
+		os.Getenv("SOP_SERVICE_ADDR"),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to SOP service: %v", err)
 	}
-	return value
+	defer sopConn.Close()
+
+	retryConfig := &creditUtils.RetryConfig{
+		MaxAttempts: 3,
+		BaseDelay:   100 * time.Millisecond,
+		MaxDelay:    1 * time.Second,
+	}
+
+	sopSvc := sopService.NewSOPServiceClient(sopConn, retryConfig)
+
+	// Start gRPC server
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%s", os.Getenv("PORT")))
+	if err != nil {
+		log.Fatalf("Failed to listen: %v", err)
+	}
+
+	s := grpc.NewServer()
+	creditEnquiryServer := server.NewServer(
+		log.Default(),
+		nil, // validator
+		redisRepo,
+		spannerRepo,
+		sopRepository,
+		nil, // publisher
+		sopSvc,
+	)
+
+	pb.RegisterCreditEnquiryServiceServer(s, creditEnquiryServer)
+	log.Printf("Starting gRPC server on port %s", os.Getenv("PORT"))
+	if err := s.Serve(lis); err != nil {
+		log.Fatalf("Failed to serve: %v", err)
+	}
 }

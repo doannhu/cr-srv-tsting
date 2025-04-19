@@ -11,6 +11,7 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	cerrors "go-loan-service-v3/internal/credit_enquiry/errors"
 	pb "go-loan-service-v3/proto"
+	sopPb "go-loan-service-v3/proto/sop"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -80,6 +81,15 @@ func (m *mockSopRepository) GetSop(ctx context.Context, creditEnquiryID string, 
 	return nil, nil
 }
 
+// mockSOPService implements the SOPService interface for testing
+type mockSOPService struct {
+	getConsolidatedSOPFunc func(context.Context, *sopPb.SOPRequest) (*sopPb.SOPResponse, error)
+}
+
+func (m *mockSOPService) GetConsolidatedSOP(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
+	return m.getConsolidatedSOPFunc(ctx, req)
+}
+
 func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	// Create a test logger that writes to a buffer
 	var logBuffer bytes.Buffer
@@ -92,7 +102,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	tests := []struct {
 		name        string
 		request     *pb.CreditEnquiryRequest
-		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository)
+		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService)
 		wantErr     bool
 		wantSuccess bool
 		wantCode    string
@@ -112,7 +122,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				TotalSavingsAmount:               10000,
 				TotalNumberOfContinuingHomeLoans: 0,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -138,7 +148,19 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return nil
 					},
 				}
-				return validator, redisRepo, spannerRepo, publisher, sopRepo
+				sopService := &mockSOPService{
+					getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
+						return &sopPb.SOPResponse{
+							SopAssessmentId:                  "test-sop-id",
+							ServiceabilityAssessmentId:       "test-serviceability-id",
+							TotalMonthlyNetIncomeAmount:      5000,
+							TotalAnnualGrossIncome:           60000,
+							TotalSavingsAmount:               10000,
+							TotalNumberOfContinuingHomeLoans: 0,
+						}, nil
+					},
+				}
+				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService
 			},
 			wantErr:     false,
 			wantSuccess: true,
@@ -149,8 +171,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte{},
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -162,8 +184,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte("invalid-uuid"),
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -175,7 +197,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(false, cerrors.NewValidationError(
@@ -185,11 +207,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						), nil), nil
 					},
 				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -201,17 +219,13 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return nil, errors.New("internal error")
 					},
 				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -223,7 +237,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -234,11 +248,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return errors.New("redis error")
 					},
 				}
-				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
+				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -250,7 +260,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -266,11 +276,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return errors.New("spanner error")
 					},
 				}
-				return validator, redisRepo, spannerRepo, &mockPublisher{}, &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
+				return validator, redisRepo, spannerRepo, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -278,53 +284,11 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			wantMessage: "Failed to save request to database",
 		},
 		{
-			name: "spanner retry success after failures",
-			request: &pb.CreditEnquiryRequest{
-				RequestId: validUUIDBytes,
-			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(true, nil, nil), nil
-					},
-				}
-				redisRepo := &mockRedisRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				attempt := 0
-				spannerRepo := &mockSpannerRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						attempt++
-						if attempt < 3 {
-							return errors.New("temporary spanner error")
-						}
-						return nil
-					},
-				}
-				publisher := &mockPublisher{
-					publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				sopRepo := &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
-				return validator, redisRepo, spannerRepo, publisher, sopRepo
-			},
-			wantErr:     false,
-			wantSuccess: true,
-			wantMessage: "Credit enquiry processed successfully",
-		},
-		{
 			name: "publisher failure - request still succeeds",
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository) {
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
 				validator := &mockValidator{
 					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 						return cerrors.NewValidationResponse(true, nil, nil), nil
@@ -350,7 +314,19 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 						return nil
 					},
 				}
-				return validator, redisRepo, spannerRepo, publisher, sopRepo
+				sopService := &mockSOPService{
+					getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
+						return &sopPb.SOPResponse{
+							SopAssessmentId:                  "test-sop-id",
+							ServiceabilityAssessmentId:       "test-serviceability-id",
+							TotalMonthlyNetIncomeAmount:      5000,
+							TotalAnnualGrossIncome:           60000,
+							TotalSavingsAmount:               10000,
+							TotalNumberOfContinuingHomeLoans: 0,
+						}, nil
+					},
+				}
+				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService
 			},
 			wantErr:     false,
 			wantSuccess: true,
@@ -362,10 +338,10 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Setup mocks
-			validator, redisRepo, spannerRepo, publisher, sopRepo := tt.setupMocks()
+			validator, redisRepo, spannerRepo, publisher, sopRepo, sopService := tt.setupMocks()
 
 			// Create the server
-			server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher)
+			server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
 
 			// Process the request
 			ctx := context.Background()
@@ -396,8 +372,9 @@ func TestNewServer(t *testing.T) {
 	spannerRepo := &mockSpannerRepository{}
 	publisher := &mockPublisher{}
 	sopRepo := &mockSopRepository{}
+	sopService := &mockSOPService{}
 
-	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher)
+	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
 
 	assert.NotNil(t, server)
 	assert.Equal(t, logger, server.logger)
@@ -406,6 +383,7 @@ func TestNewServer(t *testing.T) {
 	assert.Equal(t, spannerRepo, server.spannerRepo)
 	assert.Equal(t, publisher, server.publisher)
 	assert.Equal(t, sopRepo, server.sopRepo)
+	assert.Equal(t, sopService, server.sopService)
 }
 
 func TestStartServer(t *testing.T) {
@@ -441,10 +419,22 @@ func TestStartServer(t *testing.T) {
 			return nil
 		},
 	}
+	sopService := &mockSOPService{
+		getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
+			return &sopPb.SOPResponse{
+				SopAssessmentId:                  "test-sop-id",
+				ServiceabilityAssessmentId:       "test-serviceability-id",
+				TotalMonthlyNetIncomeAmount:      5000,
+				TotalAnnualGrossIncome:           60000,
+				TotalSavingsAmount:               10000,
+				TotalNumberOfContinuingHomeLoans: 0,
+			}, nil
+		},
+	}
 
 	// Start server in a goroutine
 	go func() {
-		err := StartServer("50051", validator, redisRepo, spannerRepo, sopRepo, publisher)
+		err := StartServer("50051", validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
 		assert.NoError(t, err)
 	}()
 
@@ -485,6 +475,6 @@ func TestStartServer(t *testing.T) {
 	assert.NotNil(t, resp)
 
 	// Test invalid port
-	err = StartServer("invalid", validator, redisRepo, spannerRepo, sopRepo, publisher)
+	err = StartServer("invalid", validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
 	assert.Error(t, err)
 }

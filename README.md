@@ -177,11 +177,18 @@ go-loan-service-v3/
 │   │   │   └── credit_enquiry.go # Credit enquiry entity definition
 │   │   ├── repository/
 │   │   │   ├── redis_repository.go  # Redis data caching
-│   │   │   └── spanner_repository.go # Spanner data persistence
+│   │   │   ├── spanner_repository.go # Spanner data persistence
+│   │   │   └── sop/
+│   │   │       ├── spanner_sop_repository.go # SOP data persistence
+│   │   │       └── spanner_sop_repository_test.go # SOP repository tests
 │   │   ├── publisher/
 │   │   │   └── pubsub_publisher.go  # Pub/Sub event publishing
 │   │   ├── server/
 │   │   │   └── server.go       # gRPC server implementation
+│   │   ├── service/
+│   │   │   └── sop/
+│   │   │       ├── sop_service.go # SOP service implementation
+│   │   │       └── sop_service_test.go # SOP service tests
 │   │   ├── utils/
 │   │   │   ├── retry.go        # Retry pattern implementation
 │   │   │   └── retry_test.go   # Retry pattern tests
@@ -193,7 +200,8 @@ go-loan-service-v3/
 │   ├── variables.tf            # Terraform variables
 │   └── outputs.tf              # Terraform outputs
 ├── proto/
-│   └── credit_enquiry.proto    # Protocol buffer definitions
+│   ├── credit_enquiry.proto    # Protocol buffer definitions
+│   └── sop.proto               # SOP protocol buffer definitions
 ├── go.mod                      # Go module definition
 └── README.md                   # Project documentation
 ```
@@ -202,6 +210,7 @@ go-loan-service-v3/
 
 ### Protocol Buffers (`proto/`)
 - `CreditEnquiryRequest` message definition
+- `SOPRequest` and `SOPResponse` message definitions
 - UUID stored as bytes with validation rules
 - Numeric fields as appropriate types (double, int64)
 - gRPC service definition
@@ -214,6 +223,15 @@ go-loan-service-v3/
 - Key management using UUID strings
 - Schema-based storage with request metadata
 - Request comparison using proto.Equal
+
+### SOP Service Layer (`internal/credit_enquiry/service/sop`)
+- Consolidated SOP assessment
+- Serviceability calculations
+- Income verification
+- Loan eligibility checks
+- gRPC client integration
+- Retry mechanism for reliability
+- Error handling and logging
 
 ### Publisher Layer (`internal/credit_enquiry/publisher`)
 - Pub/Sub client management
@@ -251,23 +269,32 @@ The service includes comprehensive test coverage:
    - Invalid UUID format
    - Invalid UUID version
 
-2. **String Length Tests**
+2. **SOP Service Tests**
+   - Tests for SOP assessment logic
+   - Mock client integration
+   - Error handling scenarios
+   - Retry mechanism validation
+   - Serviceability calculations
+   - Income verification
+   - Loan eligibility checks
+
+3. **String Length Tests**
    - Maximum length validation for all string fields
    - Error messages for exceeded lengths
 
-3. **Numeric Field Tests**
+4. **Numeric Field Tests**
    - Zero values
    - Negative values
    - Excessive values
    - Boundary conditions
 
-4. **Duplicate Request Tests**
+5. **Duplicate Request Tests**
    - New unique requests
    - Duplicate requests with matching payloads
    - Duplicate requests with different payloads
    - Redis error handling
 
-5. **Server Tests**
+6. **Server Tests**
    - Request validation
    - Repository interaction
    - Error handling
@@ -293,11 +320,24 @@ The service includes comprehensive test coverage:
 - Spanner integration tests
 - Redis integration tests
 - Pub/Sub integration tests
+- SOP service integration tests
+  - Service communication
+  - Data persistence
+  - Error handling
+  - Retry behavior
+  - Assessment logic
+  - Serviceability calculations
 
 ### Running Tests
 ```bash
 # Run all tests
 go test ./...
+
+# Run specific test suites
+go test -v ./internal/credit_enquiry/repository/redis_repository.go ./internal/credit_enquiry/repository/redis_integration_test.go
+go test -v ./internal/credit_enquiry/repository/spanner_repository.go ./internal/credit_enquiry/repository/spanner_integration_test.go
+go test -v ./internal/credit_enquiry/service/sop/...
+go test -v ./internal/credit_enquiry/repository/sop/...
 
 # Run tests with coverage
 go test -cover ./...
