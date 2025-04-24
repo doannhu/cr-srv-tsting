@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package proto;
+
+import "validate/validate.proto";
+
+option go_package = "go-loan-service-v3/proto";
+
+// ProductAssessmentRequest represents a request to save a product assessment
+message ProductAssessmentRequest {
+    string credit_enquiry_id = 1 [(validate.rules).string = {min_len: 1}];
+    string credit_enquiry_version = 2 [(validate.rules).string = {min_len: 1}];
+    string product_code = 3 [(validate.rules).string = {min_len: 1}];
+    string product_name = 4 [(validate.rules).string = {min_len: 1}];
+    double loan_amount = 5 [(validate.rules).double = {gte: 0}];
+    string loan_purpose = 6 [(validate.rules).string = {min_len: 1}];
+    int64 initial_structure_term_month = 7 [(validate.rules).int64 = {gte: 0}];
+}
+
+// GetProductAssessmentRequest represents a request to get a product assessment
+message GetProductAssessmentRequest {
+    string credit_enquiry_id = 1 [(validate.rules).string = {min_len: 1}];
+    string credit_enquiry_version = 2 [(validate.rules).string = {min_len: 1}];
+}
+
+// ProductAssessmentResponse represents the response for product assessment operations
+message ProductAssessmentResponse {
+    string product_assessment_id = 1;
+    string credit_enquiry_id = 2;
+    string credit_enquiry_version = 3;
+    string product_code = 4;
+    string product_name = 5;
+    double loan_amount = 6;
+    string loan_purpose = 7;
+    int64 initial_structure_term_month = 8;
+    int64 initial_structure_index_rate = 9;
+}
+
+// ProductRateRequest represents the request to get product rate
+message ProductRateRequest {
+    string product_code = 1;
+    string product_name = 2;
+}
+
+// ProductRateResponse represents the response from product service
+message ProductRateResponse {
+    int64 initial_structure_index_rate = 1;
+}
+
+// ProductAssessmentService defines the service for product assessment
+service ProductAssessmentService {
+    // GetProductRate retrieves the product rate from product service
+    rpc GetProductRate(ProductRateRequest) returns (ProductRateResponse) {}
+} 

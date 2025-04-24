@@ -79,12 +79,14 @@ func main() {
 	s := grpc.NewServer()
 	creditEnquiryServer := server.NewServer(
 		log.Default(),
-		nil, // validator
+		nil, // TODO: implement validator
 		redisRepo,
 		spannerRepo,
 		sopRepository,
-		nil, // publisher
+		nil, // TODO: implement publisher
 		sopSvc,
+		nil, // TODO: implement product assessment service
+		nil, // TODO: implement product assessment repository
 	)
 
 	pb.RegisterCreditEnquiryServiceServer(s, creditEnquiryServer)

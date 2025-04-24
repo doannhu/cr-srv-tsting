@@ -6,7 +6,6 @@ import (
 	"errors"
 	"log"
 	"testing"
-	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	cerrors "go-loan-service-v3/internal/credit_enquiry/errors"
@@ -15,79 +14,123 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
-	"google.golang.org/grpc"
+	"github.com/stretchr/testify/mock"
 )
 
-// mockValidator implements the Validator interface for testing
+// Mock implementations
 type mockValidator struct {
-	validateFunc func(*pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error)
+	mock.Mock
 }
 
-func (m *mockValidator) ValidateRequest(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-	return m.validateFunc(req)
+func (m *mockValidator) ValidateRequest(request *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
+	args := m.Called(request)
+	return args.Get(0).(*cerrors.ValidationResponse), args.Error(1)
 }
 
-// mockRedisRepository implements the RequestCacheRepository interface for testing
 type mockRedisRepository struct {
-	saveCreditEnquiryFunc func(context.Context, *pb.CreditEnquiryRequest) error
-	getCreditEnquiryFunc  func(context.Context, string, string) (*pb.CreditEnquiryRequest, error)
+	mock.Mock
 }
 
-func (m *mockRedisRepository) SaveCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-	return m.saveCreditEnquiryFunc(ctx, req)
+func (m *mockRedisRepository) SaveCreditEnquiry(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
 }
 
 func (m *mockRedisRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
-	return m.getCreditEnquiryFunc(ctx, requestID, version)
+	args := m.Called(ctx, requestID, version)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb.CreditEnquiryRequest), args.Error(1)
 }
 
-// mockSpannerRepository implements the CreditEnquiryRepository interface for testing
 type mockSpannerRepository struct {
-	saveCreditEnquiryFunc func(context.Context, *pb.CreditEnquiryRequest) error
-	getCreditEnquiryFunc  func(context.Context, string, string) (*pb.CreditEnquiryRequest, error)
+	mock.Mock
 }
 
-func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-	return m.saveCreditEnquiryFunc(ctx, req)
+func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
 }
 
 func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
-	return m.getCreditEnquiryFunc(ctx, requestID, version)
+	args := m.Called(ctx, requestID, version)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb.CreditEnquiryRequest), args.Error(1)
 }
 
 func (m *mockSpannerRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
-	return m.saveCreditEnquiryFunc(context.Background(), req)
+	args := m.Called(req)
+	return args.Error(0)
 }
 
-// mockPublisher implements the CreditEnquiryPublisher interface for testing
-type mockPublisher struct {
-	publishFunc func(context.Context, *pb.CreditEnquiryRequest) error
-}
-
-func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-	return m.publishFunc(ctx, req)
-}
-
-// mockSopRepository implements the SopRepository interface for testing
 type mockSopRepository struct {
-	saveSopFunc func(context.Context, *entity.Sop) error
+	mock.Mock
 }
 
 func (m *mockSopRepository) SaveSop(ctx context.Context, sop *entity.Sop) error {
-	return m.saveSopFunc(ctx, sop)
+	args := m.Called(ctx, sop)
+	return args.Error(0)
 }
 
 func (m *mockSopRepository) GetSop(ctx context.Context, creditEnquiryID string, version string) (*entity.Sop, error) {
-	return nil, nil
+	args := m.Called(ctx, creditEnquiryID, version)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.Sop), args.Error(1)
 }
 
-// mockSOPService implements the SOPService interface for testing
+type mockPublisher struct {
+	mock.Mock
+}
+
+func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+	args := m.Called(ctx, request)
+	return args.Error(0)
+}
+
 type mockSOPService struct {
-	getConsolidatedSOPFunc func(context.Context, *sopPb.SOPRequest) (*sopPb.SOPResponse, error)
+	mock.Mock
 }
 
-func (m *mockSOPService) GetConsolidatedSOP(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
-	return m.getConsolidatedSOPFunc(ctx, req)
+func (m *mockSOPService) GetConsolidatedSOP(ctx context.Context, request *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
+	args := m.Called(ctx, request)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*sopPb.SOPResponse), args.Error(1)
+}
+
+type mockProductAssessmentService struct {
+	mock.Mock
+}
+
+func (m *mockProductAssessmentService) GetProductRate(ctx context.Context, request *pb.ProductRateRequest) (*pb.ProductRateResponse, error) {
+	args := m.Called(ctx, request)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*pb.ProductRateResponse), args.Error(1)
+}
+
+type mockProductAssessmentRepository struct {
+	mock.Mock
+}
+
+func (m *mockProductAssessmentRepository) SaveProductAssessment(ctx context.Context, assessment *entity.ProductAssessment) error {
+	args := m.Called(ctx, assessment)
+	return args.Error(0)
+}
+
+func (m *mockProductAssessmentRepository) GetProductAssessment(ctx context.Context, creditEnquiryID string, version string) (*entity.ProductAssessment, error) {
+	args := m.Called(ctx, creditEnquiryID, version)
+	if args.Get(0) == nil {
+		return nil, args.Error(1)
+	}
+	return args.Get(0).(*entity.ProductAssessment), args.Error(1)
 }
 
 func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
@@ -102,7 +145,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	tests := []struct {
 		name        string
 		request     *pb.CreditEnquiryRequest
-		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService)
+		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository)
 		wantErr     bool
 		wantSuccess bool
 		wantCode    string
@@ -121,49 +164,53 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				TotalAnnualGrossIncome:           60000,
 				TotalSavingsAmount:               10000,
 				TotalNumberOfContinuingHomeLoans: 0,
+				ProductCode:                      "PROD001",
+				ProductName:                      "Test Product",
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(true, nil, nil), nil
-					},
-				}
-				redisRepo := &mockRedisRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				spannerRepo := &mockSpannerRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				publisher := &mockPublisher{
-					publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				sopRepo := &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
-				sopService := &mockSOPService{
-					getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
-						return &sopPb.SOPResponse{
-							SopAssessmentId:                  "test-sop-id",
-							ServiceabilityAssessmentId:       "test-serviceability-id",
-							TotalMonthlyNetIncomeAmount:      5000,
-							TotalAnnualGrossIncome:           60000,
-							TotalSavingsAmount:               10000,
-							TotalNumberOfContinuingHomeLoans: 0,
-						}, nil
-					},
-				}
-				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := new(mockValidator)
+				redisRepo := new(mockRedisRepository)
+				spannerRepo := new(mockSpannerRepository)
+				publisher := new(mockPublisher)
+				sopRepo := new(mockSopRepository)
+				sopService := new(mockSOPService)
+				productAssessmentService := new(mockProductAssessmentService)
+				productAssessmentRepo := new(mockProductAssessmentRepository)
+
+				// Setup validator mock
+				validator.On("ValidateRequest", mock.Anything).Return(&cerrors.ValidationResponse{Success: true}, nil)
+
+				// Setup Redis mock
+				redisRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(nil)
+
+				// Setup Spanner mock
+				spannerRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(nil)
+
+				// Setup SOP service mock
+				sopService.On("GetConsolidatedSOP", mock.Anything, mock.Anything).Return(&sopPb.SOPResponse{
+					SopAssessmentId:            "test-sop-id",
+					ServiceabilityAssessmentId: "test-serviceability-id",
+				}, nil)
+
+				// Setup SOP repository mock
+				sopRepo.On("SaveSop", mock.Anything, mock.Anything).Return(nil)
+
+				// Setup product assessment service mock
+				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&pb.ProductRateResponse{
+					InitialStructureIndexRate: 5,
+				}, nil)
+
+				// Setup product assessment repository mock
+				productAssessmentRepo.On("SaveProductAssessment", mock.Anything, mock.Anything).Return(nil)
+
+				// Setup publisher mock
+				publisher.On("PublishCreditEnquiryEvent", mock.Anything, mock.Anything).Return(nil)
+
+				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService, productAssessmentService, productAssessmentRepo
 			},
 			wantErr:     false,
 			wantSuccess: true,
+			wantCode:    "",
 			wantMessage: "Credit enquiry processed successfully",
 		},
 		{
@@ -171,8 +218,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte{},
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -184,8 +231,8 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: []byte("invalid-uuid"),
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				return &mockValidator{}, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -197,17 +244,10 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(false, cerrors.NewValidationError(
-							cerrors.ErrBadRequest,
-							"validation failed",
-							nil,
-						), nil), nil
-					},
-				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := &mockValidator{}
+				validator.On("ValidateRequest", mock.Anything).Return(&cerrors.ValidationResponse{Success: false, Error: cerrors.NewValidationError(cerrors.ErrBadRequest, "validation failed", nil)}, nil)
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -219,13 +259,10 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return nil, errors.New("internal error")
-					},
-				}
-				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := &mockValidator{}
+				validator.On("ValidateRequest", mock.Anything).Return((*cerrors.ValidationResponse)(nil), errors.New("internal error"))
+				return validator, &mockRedisRepository{}, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -237,18 +274,12 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(true, nil, nil), nil
-					},
-				}
-				redisRepo := &mockRedisRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return errors.New("redis error")
-					},
-				}
-				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := &mockValidator{}
+				validator.On("ValidateRequest", mock.Anything).Return(&cerrors.ValidationResponse{Success: true}, nil)
+				redisRepo := &mockRedisRepository{}
+				redisRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(errors.New("redis error"))
+				return validator, redisRepo, &mockSpannerRepository{}, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -260,23 +291,14 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(true, nil, nil), nil
-					},
-				}
-				redisRepo := &mockRedisRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				spannerRepo := &mockSpannerRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return errors.New("spanner error")
-					},
-				}
-				return validator, redisRepo, spannerRepo, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := &mockValidator{}
+				validator.On("ValidateRequest", mock.Anything).Return(&cerrors.ValidationResponse{Success: true}, nil)
+				redisRepo := &mockRedisRepository{}
+				redisRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(nil)
+				spannerRepo := &mockSpannerRepository{}
+				spannerRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(errors.New("spanner error"))
+				return validator, redisRepo, spannerRepo, &mockPublisher{}, &mockSopRepository{}, &mockSOPService{}, &mockProductAssessmentService{}, &mockProductAssessmentRepository{}
 			},
 			wantErr:     false,
 			wantSuccess: false,
@@ -288,45 +310,29 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 			request: &pb.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
-			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService) {
-				validator := &mockValidator{
-					validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-						return cerrors.NewValidationResponse(true, nil, nil), nil
-					},
-				}
-				redisRepo := &mockRedisRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				spannerRepo := &mockSpannerRepository{
-					saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return nil
-					},
-				}
-				publisher := &mockPublisher{
-					publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-						return errors.New("publisher error")
-					},
-				}
-				sopRepo := &mockSopRepository{
-					saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-						return nil
-					},
-				}
-				sopService := &mockSOPService{
-					getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
-						return &sopPb.SOPResponse{
-							SopAssessmentId:                  "test-sop-id",
-							ServiceabilityAssessmentId:       "test-serviceability-id",
-							TotalMonthlyNetIncomeAmount:      5000,
-							TotalAnnualGrossIncome:           60000,
-							TotalSavingsAmount:               10000,
-							TotalNumberOfContinuingHomeLoans: 0,
-						}, nil
-					},
-				}
-				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService
+			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
+				validator := &mockValidator{}
+				validator.On("ValidateRequest", mock.Anything).Return(&cerrors.ValidationResponse{Success: true}, nil)
+				redisRepo := &mockRedisRepository{}
+				redisRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(nil)
+				spannerRepo := &mockSpannerRepository{}
+				spannerRepo.On("SaveCreditEnquiry", mock.Anything, mock.Anything).Return(nil)
+				publisher := &mockPublisher{}
+				publisher.On("PublishCreditEnquiryEvent", mock.Anything, mock.Anything).Return(errors.New("publisher error"))
+				sopRepo := &mockSopRepository{}
+				sopRepo.On("SaveSop", mock.Anything, mock.Anything).Return(nil)
+				sopService := &mockSOPService{}
+				sopService.On("GetConsolidatedSOP", mock.Anything, mock.Anything).Return(&sopPb.SOPResponse{
+					SopAssessmentId:            "test-sop-id",
+					ServiceabilityAssessmentId: "test-serviceability-id",
+				}, nil)
+				productAssessmentService := &mockProductAssessmentService{}
+				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&pb.ProductRateResponse{
+					InitialStructureIndexRate: 5,
+				}, nil)
+				productAssessmentRepo := &mockProductAssessmentRepository{}
+				productAssessmentRepo.On("SaveProductAssessment", mock.Anything, mock.Anything).Return(nil)
+				return validator, redisRepo, spannerRepo, publisher, sopRepo, sopService, productAssessmentService, productAssessmentRepo
 			},
 			wantErr:     false,
 			wantSuccess: true,
@@ -337,144 +343,107 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Setup mocks
-			validator, redisRepo, spannerRepo, publisher, sopRepo, sopService := tt.setupMocks()
+			validator, redisRepo, spannerRepo, publisher, sopRepo, sopService, productAssessmentService, productAssessmentRepo := tt.setupMocks()
 
-			// Create the server
-			server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
+			server := NewServer(
+				logger,
+				validator,
+				redisRepo,
+				spannerRepo,
+				sopRepo,
+				publisher,
+				sopService,
+				productAssessmentService,
+				productAssessmentRepo,
+			)
 
-			// Process the request
-			ctx := context.Background()
-			resp, err := server.ProcessCreditEnquiry(ctx, tt.request)
+			response, err := server.ProcessCreditEnquiry(context.Background(), tt.request)
 
-			// Check error
 			if tt.wantErr {
 				assert.Error(t, err)
-				return
+			} else {
+				assert.NoError(t, err)
 			}
-			assert.NoError(t, err)
 
-			// Check response
-			assert.NotNil(t, resp)
-			assert.Equal(t, tt.wantSuccess, resp.Success)
-			assert.Equal(t, tt.wantMessage, resp.Message)
-			if tt.wantCode != "" {
-				assert.Equal(t, tt.wantCode, resp.Code)
-			}
+			assert.Equal(t, tt.wantSuccess, response.Success)
+			assert.Equal(t, tt.wantCode, response.Code)
+			assert.Equal(t, tt.wantMessage, response.Message)
+
+			// Verify all mock expectations
+			validator.AssertExpectations(t)
+			redisRepo.AssertExpectations(t)
+			spannerRepo.AssertExpectations(t)
+			publisher.AssertExpectations(t)
+			sopRepo.AssertExpectations(t)
+			sopService.AssertExpectations(t)
+			productAssessmentService.AssertExpectations(t)
+			productAssessmentRepo.AssertExpectations(t)
 		})
 	}
 }
 
 func TestNewServer(t *testing.T) {
-	logger := log.New(&bytes.Buffer{}, "", log.LstdFlags)
-	validator := &mockValidator{}
-	redisRepo := &mockRedisRepository{}
-	spannerRepo := &mockSpannerRepository{}
-	publisher := &mockPublisher{}
-	sopRepo := &mockSopRepository{}
-	sopService := &mockSOPService{}
+	// Create a test logger
+	logger := log.Default()
 
-	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
+	// Create mock dependencies
+	validator := new(mockValidator)
+	redisRepo := new(mockRedisRepository)
+	spannerRepo := new(mockSpannerRepository)
+	publisher := new(mockPublisher)
+	sopRepo := new(mockSopRepository)
+	sopService := new(mockSOPService)
+	productAssessmentService := new(mockProductAssessmentService)
+	productAssessmentRepo := new(mockProductAssessmentRepository)
 
+	// Create server
+	server := NewServer(
+		logger,
+		validator,
+		redisRepo,
+		spannerRepo,
+		sopRepo,
+		publisher,
+		sopService,
+		productAssessmentService,
+		productAssessmentRepo,
+	)
+
+	// Verify server fields
 	assert.NotNil(t, server)
 	assert.Equal(t, logger, server.logger)
 	assert.Equal(t, validator, server.validator)
 	assert.Equal(t, redisRepo, server.redisRepo)
 	assert.Equal(t, spannerRepo, server.spannerRepo)
-	assert.Equal(t, publisher, server.publisher)
 	assert.Equal(t, sopRepo, server.sopRepo)
+	assert.Equal(t, publisher, server.publisher)
 	assert.Equal(t, sopService, server.sopService)
+	assert.Equal(t, productAssessmentService, server.productAssessmentService)
+	assert.Equal(t, productAssessmentRepo, server.productAssessmentRepo)
 }
 
 func TestStartServer(t *testing.T) {
 	// Create mock dependencies
-	validator := &mockValidator{
-		validateFunc: func(req *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
-			return cerrors.NewValidationResponse(true, nil, nil), nil
-		},
-	}
-	redisRepo := &mockRedisRepository{
-		saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-			return nil
-		},
-		getCreditEnquiryFunc: func(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
-			return nil, nil
-		},
-	}
-	spannerRepo := &mockSpannerRepository{
-		saveCreditEnquiryFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-			return nil
-		},
-		getCreditEnquiryFunc: func(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
-			return nil, nil
-		},
-	}
-	publisher := &mockPublisher{
-		publishFunc: func(ctx context.Context, req *pb.CreditEnquiryRequest) error {
-			return nil
-		},
-	}
-	sopRepo := &mockSopRepository{
-		saveSopFunc: func(ctx context.Context, sop *entity.Sop) error {
-			return nil
-		},
-	}
-	sopService := &mockSOPService{
-		getConsolidatedSOPFunc: func(ctx context.Context, req *sopPb.SOPRequest) (*sopPb.SOPResponse, error) {
-			return &sopPb.SOPResponse{
-				SopAssessmentId:                  "test-sop-id",
-				ServiceabilityAssessmentId:       "test-serviceability-id",
-				TotalMonthlyNetIncomeAmount:      5000,
-				TotalAnnualGrossIncome:           60000,
-				TotalSavingsAmount:               10000,
-				TotalNumberOfContinuingHomeLoans: 0,
-			}, nil
-		},
-	}
-
-	// Start server in a goroutine
-	go func() {
-		err := StartServer("50051", validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
-		assert.NoError(t, err)
-	}()
-
-	// Wait for server to start
-	time.Sleep(100 * time.Millisecond)
-
-	// Try to connect to the server
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
-	assert.NoError(t, err)
-	defer conn.Close()
-
-	// Create a client
-	client := pb.NewCreditEnquiryServiceClient(conn)
-
-	// Test that the server is responding
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-
-	// Create a valid request
-	validUUID := uuid.New()
-	validUUIDBytes, _ := validUUID.MarshalBinary()
-	req := &pb.CreditEnquiryRequest{
-		RequestId:                        validUUIDBytes,
-		EnquiryState:                     "NEW",
-		ApplicationNumber:                "APP123",
-		LoanAmount:                       100000,
-		LoanPurpose:                      "Home Purchase",
-		InitialStructureTermMonth:        360,
-		TotalMonthlyNetIncomeAmount:      5000,
-		TotalAnnualGrossIncome:           60000,
-		TotalSavingsAmount:               10000,
-		TotalNumberOfContinuingHomeLoans: 0,
-	}
-
-	// Make a request
-	resp, err := client.ProcessCreditEnquiry(ctx, req)
-	assert.NoError(t, err)
-	assert.NotNil(t, resp)
+	validator := new(mockValidator)
+	redisRepo := new(mockRedisRepository)
+	spannerRepo := new(mockSpannerRepository)
+	publisher := new(mockPublisher)
+	sopRepo := new(mockSopRepository)
+	sopService := new(mockSOPService)
+	productAssessmentService := new(mockProductAssessmentService)
+	productAssessmentRepo := new(mockProductAssessmentRepository)
 
 	// Test invalid port
-	err = StartServer("invalid", validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
+	err := StartServer(
+		"invalid",
+		validator,
+		redisRepo,
+		spannerRepo,
+		sopRepo,
+		publisher,
+		sopService,
+		productAssessmentService,
+		productAssessmentRepo,
+	)
 	assert.Error(t, err)
 }

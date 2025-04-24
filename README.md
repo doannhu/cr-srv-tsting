@@ -91,7 +91,7 @@ Required variables in `variables.tf`:
    - Returns error if cache storage fails
 
 3. **Persistent Storage**
-   - Asynchronously stores request in Google Cloud Spanner
+   - Asynchronously stores request in Google Cloud Spanner credit enquiry table
    - Maintains historical record of all requests
    - Continues processing even if Spanner storage fails
 
@@ -100,6 +100,13 @@ Required variables in `variables.tf`:
    - Includes request details and processing status
    - Continues processing even if event publishing fails
    - Logs any publishing errors for monitoring
+
+5. **Product Assessment**
+   - Retrieves product rate from product service
+   - Stores assessment results in Spanner product assessment table
+   - Handles numeric precision for loan amounts
+   - Includes retry mechanism for reliability
+   - Logs assessment details for monitoring
 
 ## Integration Tests
 
@@ -174,21 +181,29 @@ go-loan-service-v3/
 │   ├── credit_enquiry/
 │   │   ├── entity/
 │   │   │   ├── request_cache.go # Request cache entity definition
-│   │   │   └── credit_enquiry.go # Credit enquiry entity definition
+│   │   │   ├── credit_enquiry.go # Credit enquiry entity definition
+│   │   │   └── product_assessment.go # Product assessment entity definition
 │   │   ├── repository/
 │   │   │   ├── redis_repository.go  # Redis data caching
 │   │   │   ├── spanner_repository.go # Spanner data persistence
 │   │   │   └── sop/
 │   │   │       ├── spanner_sop_repository.go # SOP data persistence
 │   │   │       └── spanner_sop_repository_test.go # SOP repository tests
+│   │   │   └── product_assessment/
+│   │   │       ├── spanner_product_assessment_repository.go # Product assessment data persistence
+│   │   │       └── spanner_product_assessment_repository_test.go # Product assessment repository tests
 │   │   ├── publisher/
 │   │   │   └── pubsub_publisher.go  # Pub/Sub event publishing
 │   │   ├── server/
 │   │   │   └── server.go       # gRPC server implementation
 │   │   ├── service/
-│   │   │   └── sop/
-│   │   │       ├── sop_service.go # SOP service implementation
-│   │   │       └── sop_service_test.go # SOP service tests
+│   │   │   ├── sop/
+│   │   │   │   ├── sop_service.go # SOP service implementation
+│   │   │   │   └── sop_service_test.go # SOP service tests
+│   │   │   └── product_assessment/
+│   │   │       ├── product_assessment_service.go # Product assessment service implementation
+│   │   │       ├── product_assessment_service_test.go # Product assessment unit tests
+│   │   │       └── product_assessment_service_integration_test.go # Product assessment integration tests
 │   │   ├── utils/
 │   │   │   ├── retry.go        # Retry pattern implementation
 │   │   │   └── retry_test.go   # Retry pattern tests
@@ -201,7 +216,8 @@ go-loan-service-v3/
 │   └── outputs.tf              # Terraform outputs
 ├── proto/
 │   ├── credit_enquiry.proto    # Protocol buffer definitions
-│   └── sop.proto               # SOP protocol buffer definitions
+│   ├── sop.proto               # SOP protocol buffer definitions
+│   └── product_assessment.proto # Product assessment protocol buffer definitions
 ├── go.mod                      # Go module definition
 └── README.md                   # Project documentation
 ```
@@ -233,6 +249,14 @@ go-loan-service-v3/
 - Retry mechanism for reliability
 - Error handling and logging
 
+### Product Assessment Service Layer (`internal/credit_enquiry/service/product_assessment`)
+- Product rate retrieval and assessment
+- Integration with product service
+- Retry mechanism for reliability
+- Error handling and logging
+- Rate calculation and validation
+- Product eligibility checks
+
 ### Publisher Layer (`internal/credit_enquiry/publisher`)
 - Pub/Sub client management
 - Event publishing functionality
@@ -257,6 +281,25 @@ go-loan-service-v3/
 - Configuration loading
 - Dependency injection
 - Server startup
+
+### Product Assessment Service (`internal/credit_enquiry/service/product_assessment`)
+- Product rate retrieval and assessment
+- Integration with external product service
+- Retry mechanism for transient failures
+- Error handling and logging
+- Rate calculation and validation
+- Product eligibility checks
+- Unit and integration tests
+- Mock implementations for testing
+
+### Product Assessment Repository (`internal/credit_enquiry/repository/product_assessment`)
+- Spanner-based storage for product assessments
+- NUMERIC type handling for loan amounts
+- CRUD operations for assessments
+- Schema-based storage with metadata
+- Integration tests with Spanner emulator
+- Error handling and logging
+- Proper numeric precision handling
 
 ## Testing
 

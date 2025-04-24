@@ -21,13 +21,15 @@ import (
 // CreditEnquiryServer implements the gRPC service for credit enquiries
 type CreditEnquiryServer struct {
 	pb.UnimplementedCreditEnquiryServiceServer
-	logger      *log.Logger
-	validator   interfaces.Validator
-	redisRepo   interfaces.RequestCacheRepository
-	spannerRepo interfaces.CreditEnquiryRepository
-	sopRepo     interfaces.SopRepository
-	publisher   interfaces.CreditEnquiryPublisher
-	sopService  sop.SOPService
+	logger                   *log.Logger
+	validator                interfaces.Validator
+	redisRepo                interfaces.RequestCacheRepository
+	spannerRepo              interfaces.CreditEnquiryRepository
+	sopRepo                  interfaces.SopRepository
+	publisher                interfaces.CreditEnquiryPublisher
+	sopService               sop.SOPService
+	productAssessmentService interfaces.ProductAssessmentService
+	productAssessmentRepo    interfaces.ProductAssessmentRepository
 }
 
 // NewServer creates a new instance of the credit enquiry server
@@ -39,15 +41,19 @@ func NewServer(
 	sopRepo interfaces.SopRepository,
 	publisher interfaces.CreditEnquiryPublisher,
 	sopService sop.SOPService,
+	productAssessmentService interfaces.ProductAssessmentService,
+	productAssessmentRepo interfaces.ProductAssessmentRepository,
 ) *CreditEnquiryServer {
 	return &CreditEnquiryServer{
-		logger:      logger,
-		validator:   validator,
-		redisRepo:   redisRepo,
-		spannerRepo: spannerRepo,
-		sopRepo:     sopRepo,
-		publisher:   publisher,
-		sopService:  sopService,
+		logger:                   logger,
+		validator:                validator,
+		redisRepo:                redisRepo,
+		spannerRepo:              spannerRepo,
+		sopRepo:                  sopRepo,
+		publisher:                publisher,
+		sopService:               sopService,
+		productAssessmentService: productAssessmentService,
+		productAssessmentRepo:    productAssessmentRepo,
 	}
 }
 
@@ -172,6 +178,44 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 		}, nil
 	}
 
+	// Create and save product assessment
+	productRateRequest := &pb.ProductRateRequest{
+		ProductCode: req.ProductCode,
+		ProductName: req.ProductName,
+	}
+
+	productRateResponse, err := s.productAssessmentService.GetProductRate(ctx, productRateRequest)
+	if err != nil {
+		s.logger.Printf("Failed to get product rate: %v", err)
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "Failed to get product rate",
+			Code:    errors.ErrServiceError,
+		}, nil
+	}
+
+	productAssessment := &entity.ProductAssessment{
+		ProductAssessmentID:        uuid.New().String(),
+		ServiceabilityAssessmentID: sopResponse.ServiceabilityAssessmentId,
+		CreditEnquiryID:            string(req.RequestId),
+		CreditEnquiryVersion:       "1.0",
+		ProductCode:                req.ProductCode,
+		ProductName:                req.ProductName,
+		LoanAmount:                 req.LoanAmount,
+		LoanPurpose:                req.LoanPurpose,
+		InitialStructureTermMonth:  req.InitialStructureTermMonth,
+		InitialStructureIndexRate:  productRateResponse.InitialStructureIndexRate,
+	}
+
+	if err := s.productAssessmentRepo.SaveProductAssessment(ctx, productAssessment); err != nil {
+		s.logger.Printf("Failed to save product assessment: %v", err)
+		return &pb.CreditEnquiryResponse{
+			Success: false,
+			Message: "Failed to save product assessment",
+			Code:    errors.ErrStorageError,
+		}, nil
+	}
+
 	// Publish the event
 	if err := s.publisher.PublishCreditEnquiryEvent(ctx, req); err != nil {
 		s.logger.Printf("Failed to publish event: %v", err)
@@ -190,7 +234,17 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 }
 
 // StartServer starts the gRPC server
-func StartServer(port string, validator interfaces.Validator, redisRepo interfaces.RequestCacheRepository, spannerRepo interfaces.CreditEnquiryRepository, sopRepo interfaces.SopRepository, publisher interfaces.CreditEnquiryPublisher, sopService sop.SOPService) error {
+func StartServer(
+	port string,
+	validator interfaces.Validator,
+	redisRepo interfaces.RequestCacheRepository,
+	spannerRepo interfaces.CreditEnquiryRepository,
+	sopRepo interfaces.SopRepository,
+	publisher interfaces.CreditEnquiryPublisher,
+	sopService sop.SOPService,
+	productAssessmentService interfaces.ProductAssessmentService,
+	productAssessmentRepo interfaces.ProductAssessmentRepository,
+) error {
 	lis, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
@@ -198,7 +252,17 @@ func StartServer(port string, validator interfaces.Validator, redisRepo interfac
 
 	logger := log.Default()
 	grpcServer := grpc.NewServer()
-	server := NewServer(logger, validator, redisRepo, spannerRepo, sopRepo, publisher, sopService)
+	server := NewServer(
+		logger,
+		validator,
+		redisRepo,
+		spannerRepo,
+		sopRepo,
+		publisher,
+		sopService,
+		productAssessmentService,
+		productAssessmentRepo,
+	)
 	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)

@@ -1,4 +1,4 @@
-package repository
+package product_assessment
 
 import (
 	"context"

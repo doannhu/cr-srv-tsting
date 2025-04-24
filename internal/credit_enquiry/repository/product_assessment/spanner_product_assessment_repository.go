@@ -1,4 +1,4 @@
-package repository
+package product_assessment
 
 import (
 	"context"
@@ -38,6 +38,7 @@ func (r *SpannerProductAssessmentRepository) SaveProductAssessment(ctx context.C
 
 	// Convert float64 to *big.Rat for Spanner NUMERIC
 	loanAmount := new(big.Rat).SetFloat64(assessment.LoanAmount)
+	loanAmountNumeric := spanner.NumericString(loanAmount)
 
 	mutation := spanner.InsertOrUpdate(
 		productAssessmentTable,
@@ -62,7 +63,7 @@ func (r *SpannerProductAssessmentRepository) SaveProductAssessment(ctx context.C
 			assessment.CreditEnquiryVersion,
 			assessment.ProductCode,
 			assessment.ProductName,
-			loanAmount, // Pass *big.Rat directly
+			loanAmountNumeric,
 			assessment.LoanPurpose,
 			assessment.InitialStructureTermMonth,
 			assessment.InitialStructureIndexRate,
