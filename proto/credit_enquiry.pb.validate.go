@@ -86,6 +86,10 @@ func (m *CreditEnquiryRequest) validate(all bool) error {
 
 	// no validation rules for TotalNumberOfContinuingHomeLoans
 
+	// no validation rules for ProductName
+
+	// no validation rules for ProductCode
+
 	if len(errors) > 0 {
 		return CreditEnquiryRequestMultiError(errors)
 	}

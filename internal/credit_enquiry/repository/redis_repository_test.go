@@ -56,6 +56,8 @@ func TestRedisRepository_SaveCreditEnquiry_CompareRequests(t *testing.T) {
 		TotalAnnualGrossIncome:           60000,
 		TotalSavingsAmount:               10000,
 		TotalNumberOfContinuingHomeLoans: 0,
+		ProductName:                      "Home Loan",
+		ProductCode:                      "HL001",
 	}
 
 	// Create a deep copy of the base request for modifications
@@ -64,6 +66,10 @@ func TestRedisRepository_SaveCreditEnquiry_CompareRequests(t *testing.T) {
 
 	differentStateRequest := proto.Clone(baseRequest).(*creditEnquiryProto.CreditEnquiryRequest)
 	differentStateRequest.EnquiryState = "PROCESSING"
+
+	differentProductRequest := proto.Clone(baseRequest).(*creditEnquiryProto.CreditEnquiryRequest)
+	differentProductRequest.ProductName = "Personal Loan"
+	differentProductRequest.ProductCode = "PL001"
 
 	tests := []struct {
 		name          string
@@ -90,6 +96,13 @@ func TestRedisRepository_SaveCreditEnquiry_CompareRequests(t *testing.T) {
 			name:          "different enquiry state",
 			existingReq:   baseRequest,
 			incomingReq:   differentStateRequest,
+			setupCache:    true,
+			expectedError: "request already exists with different data",
+		},
+		{
+			name:          "different product",
+			existingReq:   baseRequest,
+			incomingReq:   differentProductRequest,
 			setupCache:    true,
 			expectedError: "request already exists with different data",
 		},
@@ -153,6 +166,8 @@ func TestRedisRepository_SaveCreditEnquiry_CompareRequests(t *testing.T) {
 				assert.Equal(t, validUUIDStr, savedEntry.RequestID)
 				assert.Equal(t, tt.incomingReq.EnquiryState, savedEntry.RequestDataPayload.EnquiryState)
 				assert.Equal(t, tt.incomingReq.LoanAmount, savedEntry.RequestDataPayload.LoanAmount)
+				assert.Equal(t, tt.incomingReq.ProductName, savedEntry.RequestDataPayload.ProductName)
+				assert.Equal(t, tt.incomingReq.ProductCode, savedEntry.RequestDataPayload.ProductCode)
 			}
 		})
 	}
@@ -182,6 +197,8 @@ func TestRedisRepository_GetCreditEnquiry(t *testing.T) {
 		TotalAnnualGrossIncome:           60000,
 		TotalSavingsAmount:               10000,
 		TotalNumberOfContinuingHomeLoans: 0,
+		ProductName:                      "Home Loan",
+		ProductCode:                      "HL001",
 	}
 
 	// Save test request
@@ -221,6 +238,8 @@ func TestRedisRepository_GetCreditEnquiry(t *testing.T) {
 				assert.NotNil(t, req)
 				assert.Equal(t, testRequest.EnquiryState, req.EnquiryState)
 				assert.Equal(t, testRequest.LoanAmount, req.LoanAmount)
+				assert.Equal(t, testRequest.ProductName, req.ProductName)
+				assert.Equal(t, testRequest.ProductCode, req.ProductCode)
 			}
 		})
 	}

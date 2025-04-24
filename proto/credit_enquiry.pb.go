@@ -35,6 +35,8 @@ type CreditEnquiryRequest struct {
 	TotalAnnualGrossIncome           float64                `protobuf:"fixed64,8,opt,name=total_annual_gross_income,json=totalAnnualGrossIncome,proto3" json:"total_annual_gross_income,omitempty"`
 	TotalSavingsAmount               float64                `protobuf:"fixed64,9,opt,name=total_savings_amount,json=totalSavingsAmount,proto3" json:"total_savings_amount,omitempty"`
 	TotalNumberOfContinuingHomeLoans int64                  `protobuf:"varint,10,opt,name=total_number_of_continuing_home_loans,json=totalNumberOfContinuingHomeLoans,proto3" json:"total_number_of_continuing_home_loans,omitempty"`
+	ProductName                      string                 `protobuf:"bytes,11,opt,name=product_name,json=productName,proto3" json:"product_name,omitempty"`
+	ProductCode                      string                 `protobuf:"bytes,12,opt,name=product_code,json=productCode,proto3" json:"product_code,omitempty"`
 	unknownFields                    protoimpl.UnknownFields
 	sizeCache                        protoimpl.SizeCache
 }
@@ -139,6 +141,20 @@ func (x *CreditEnquiryRequest) GetTotalNumberOfContinuingHomeLoans() int64 {
 	return 0
 }
 
+func (x *CreditEnquiryRequest) GetProductName() string {
+	if x != nil {
+		return x.ProductName
+	}
+	return ""
+}
+
+func (x *CreditEnquiryRequest) GetProductCode() string {
+	if x != nil {
+		return x.ProductCode
+	}
+	return ""
+}
+
 // CreditEnquiryResponse represents the response to a loan request
 type CreditEnquiryResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -204,7 +220,7 @@ var File_proto_credit_enquiry_proto protoreflect.FileDescriptor
 
 const file_proto_credit_enquiry_proto_rawDesc = "" +
 	"\n" +
-	"\x1aproto/credit_enquiry.proto\x12\x05proto\x1a\x17validate/validate.proto\"\x9b\x04\n" +
+	"\x1aproto/credit_enquiry.proto\x12\x05proto\x1a\x17validate/validate.proto\"\xe1\x04\n" +
 	"\x14CreditEnquiryRequest\x12&\n" +
 	"\n" +
 	"request_id\x18\x01 \x01(\fB\a\xfaB\x04z\x02h\x10R\trequestId\x12#\n" +
@@ -218,7 +234,9 @@ const file_proto_credit_enquiry_proto_rawDesc = "" +
 	"\x19total_annual_gross_income\x18\b \x01(\x01R\x16totalAnnualGrossIncome\x120\n" +
 	"\x14total_savings_amount\x18\t \x01(\x01R\x12totalSavingsAmount\x12O\n" +
 	"%total_number_of_continuing_home_loans\x18\n" +
-	" \x01(\x03R totalNumberOfContinuingHomeLoans\"_\n" +
+	" \x01(\x03R totalNumberOfContinuingHomeLoans\x12!\n" +
+	"\fproduct_name\x18\v \x01(\tR\vproductName\x12!\n" +
+	"\fproduct_code\x18\f \x01(\tR\vproductCode\"_\n" +
 	"\x15CreditEnquiryResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12\x12\n" +

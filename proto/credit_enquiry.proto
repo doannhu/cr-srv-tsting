@@ -18,6 +18,8 @@ message CreditEnquiryRequest {
     double total_annual_gross_income = 8;
     double total_savings_amount = 9;
     int64 total_number_of_continuing_home_loans = 10;
+    string product_name = 11;
+    string product_code = 12;
 }
 
 // CreditEnquiryResponse represents the response to a loan request
