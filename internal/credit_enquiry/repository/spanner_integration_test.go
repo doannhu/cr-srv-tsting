@@ -233,7 +233,7 @@ func (s *SpannerTestSuite) TestErrorHandling() {
 	// Test non-existent request
 	retrieved, err := s.repository.GetCreditEnquiry(ctx, "non-existent-id", "1.0")
 	s.Require().Error(err, "Expected error for non-existent request")
-	s.Equal("max retry attempts (5) reached for get credit enquiry: credit enquiry not found", err.Error())
+	s.Equal("credit enquiry not found", err.Error())
 	s.Nil(retrieved)
 
 	// Test invalid request
