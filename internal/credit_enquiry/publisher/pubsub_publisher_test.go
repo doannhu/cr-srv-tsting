@@ -6,7 +6,8 @@ import (
 	"testing"
 	"time"
 
-	creditEnquiryEventProto "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryEventProto "go-loan-service-v3/proto/credit_enquiry_event"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
@@ -73,7 +74,7 @@ func (s *pubsubPublisherTestSuite) TestPublishCreditEnquiryEvent() {
 
 	// Create a test request
 	requestID := uuid.New()
-	request := &creditEnquiryEventProto.CreditEnquiryRequest{
+	request := &creditEnquiryProto.CreditEnquiryRequest{
 		RequestId:                        requestID[:],
 		ApplicationNumber:                "APP123",
 		EnquiryState:                     "NEW",
@@ -122,7 +123,7 @@ func (s *pubsubPublisherTestSuite) TestPublishCreditEnquiryEvent() {
 
 func (s *pubsubPublisherTestSuite) TestPublishCreditEnquiryEventWithInvalidRequest() {
 	// Create a request with invalid UUID
-	request := &creditEnquiryEventProto.CreditEnquiryRequest{
+	request := &creditEnquiryProto.CreditEnquiryRequest{
 		RequestId: []byte("invalid-uuid"),
 	}
 
@@ -138,7 +139,7 @@ func (s *pubsubPublisherTestSuite) TestPublishCreditEnquiryEventWithDeletedTopic
 
 	// Create a test request
 	requestID := uuid.New()
-	request := &creditEnquiryEventProto.CreditEnquiryRequest{
+	request := &creditEnquiryProto.CreditEnquiryRequest{
 		RequestId: requestID[:],
 	}
 

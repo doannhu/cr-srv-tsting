@@ -6,6 +6,7 @@ import (
 
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryEventProto "go-loan-service-v3/proto/credit_enquiry_event"
 
 	"cloud.google.com/go/pubsub"
 	"github.com/google/uuid"
@@ -57,7 +58,7 @@ func (p *pubsubPublisher) PublishCreditEnquiryEvent(ctx context.Context, request
 	}
 
 	// Create event data
-	eventData := &creditEnquiryProto.CreditEnquiryEventData{
+	eventData := &creditEnquiryEventProto.CreditEnquiryEventData{
 		CreditEnquiryId:                  requestUUID.String(),
 		ApplicationNumber:                request.ApplicationNumber,
 		EnquiryState:                     request.EnquiryState,
@@ -71,7 +72,7 @@ func (p *pubsubPublisher) PublishCreditEnquiryEvent(ctx context.Context, request
 	}
 
 	// Create CloudEvent
-	event := &creditEnquiryProto.CreditEnquiryEvent{
+	event := &creditEnquiryEventProto.CreditEnquiryEvent{
 		Id:              uuid.New().String(),
 		Source:          "enquiries.gearbox.anzx",
 		SpecVersion:     "1.0",

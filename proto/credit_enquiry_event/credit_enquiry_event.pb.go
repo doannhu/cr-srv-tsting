@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.6
 // 	protoc        v5.29.3
-// source: proto/credit_enquiry_event.proto
+// source: proto/credit_enquiry_event/credit_enquiry_event.proto
 
 package proto
 
@@ -43,7 +43,7 @@ type CreditEnquiryEvent struct {
 
 func (x *CreditEnquiryEvent) Reset() {
 	*x = CreditEnquiryEvent{}
-	mi := &file_proto_credit_enquiry_event_proto_msgTypes[0]
+	mi := &file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -55,7 +55,7 @@ func (x *CreditEnquiryEvent) String() string {
 func (*CreditEnquiryEvent) ProtoMessage() {}
 
 func (x *CreditEnquiryEvent) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_credit_enquiry_event_proto_msgTypes[0]
+	mi := &file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -68,7 +68,7 @@ func (x *CreditEnquiryEvent) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreditEnquiryEvent.ProtoReflect.Descriptor instead.
 func (*CreditEnquiryEvent) Descriptor() ([]byte, []int) {
-	return file_proto_credit_enquiry_event_proto_rawDescGZIP(), []int{0}
+	return file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *CreditEnquiryEvent) GetId() string {
@@ -153,7 +153,7 @@ type CreditEnquiryEventData struct {
 
 func (x *CreditEnquiryEventData) Reset() {
 	*x = CreditEnquiryEventData{}
-	mi := &file_proto_credit_enquiry_event_proto_msgTypes[1]
+	mi := &file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -165,7 +165,7 @@ func (x *CreditEnquiryEventData) String() string {
 func (*CreditEnquiryEventData) ProtoMessage() {}
 
 func (x *CreditEnquiryEventData) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_credit_enquiry_event_proto_msgTypes[1]
+	mi := &file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -178,7 +178,7 @@ func (x *CreditEnquiryEventData) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CreditEnquiryEventData.ProtoReflect.Descriptor instead.
 func (*CreditEnquiryEventData) Descriptor() ([]byte, []int) {
-	return file_proto_credit_enquiry_event_proto_rawDescGZIP(), []int{1}
+	return file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *CreditEnquiryEventData) GetCreditEnquiryId() string {
@@ -251,11 +251,11 @@ func (x *CreditEnquiryEventData) GetTotalNumberOfContinuingHomeLoans() int64 {
 	return 0
 }
 
-var File_proto_credit_enquiry_event_proto protoreflect.FileDescriptor
+var File_proto_credit_enquiry_event_credit_enquiry_event_proto protoreflect.FileDescriptor
 
-const file_proto_credit_enquiry_event_proto_rawDesc = "" +
+const file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDesc = "" +
 	"\n" +
-	" proto/credit_enquiry_event.proto\x12\x05proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\x86\x03\n" +
+	"5proto/credit_enquiry_event/credit_enquiry_event.proto\x12\x05proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x17validate/validate.proto\"\x86\x03\n" +
 	"\x12CreditEnquiryEvent\x12\x17\n" +
 	"\x02id\x18\x01 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\x02id\x12\x1f\n" +
 	"\x06source\x18\x02 \x01(\tB\a\xfaB\x04r\x02\x10\x01R\x06source\x12*\n" +
@@ -282,24 +282,24 @@ const file_proto_credit_enquiry_event_proto_rawDesc = "" +
 	" \x01(\x03B\a\xfaB\x04\"\x02(\x00R totalNumberOfContinuingHomeLoansB\x1aZ\x18go-loan-service-v3/protob\x06proto3"
 
 var (
-	file_proto_credit_enquiry_event_proto_rawDescOnce sync.Once
-	file_proto_credit_enquiry_event_proto_rawDescData []byte
+	file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescOnce sync.Once
+	file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescData []byte
 )
 
-func file_proto_credit_enquiry_event_proto_rawDescGZIP() []byte {
-	file_proto_credit_enquiry_event_proto_rawDescOnce.Do(func() {
-		file_proto_credit_enquiry_event_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_credit_enquiry_event_proto_rawDesc), len(file_proto_credit_enquiry_event_proto_rawDesc)))
+func file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescGZIP() []byte {
+	file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescOnce.Do(func() {
+		file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDesc), len(file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDesc)))
 	})
-	return file_proto_credit_enquiry_event_proto_rawDescData
+	return file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDescData
 }
 
-var file_proto_credit_enquiry_event_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
-var file_proto_credit_enquiry_event_proto_goTypes = []any{
+var file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_proto_credit_enquiry_event_credit_enquiry_event_proto_goTypes = []any{
 	(*CreditEnquiryEvent)(nil),     // 0: proto.CreditEnquiryEvent
 	(*CreditEnquiryEventData)(nil), // 1: proto.CreditEnquiryEventData
 	(*timestamppb.Timestamp)(nil),  // 2: google.protobuf.Timestamp
 }
-var file_proto_credit_enquiry_event_proto_depIdxs = []int32{
+var file_proto_credit_enquiry_event_credit_enquiry_event_proto_depIdxs = []int32{
 	2, // 0: proto.CreditEnquiryEvent.time:type_name -> google.protobuf.Timestamp
 	1, // 1: proto.CreditEnquiryEvent.data:type_name -> proto.CreditEnquiryEventData
 	2, // [2:2] is the sub-list for method output_type
@@ -309,26 +309,26 @@ var file_proto_credit_enquiry_event_proto_depIdxs = []int32{
 	0, // [0:2] is the sub-list for field type_name
 }
 
-func init() { file_proto_credit_enquiry_event_proto_init() }
-func file_proto_credit_enquiry_event_proto_init() {
-	if File_proto_credit_enquiry_event_proto != nil {
+func init() { file_proto_credit_enquiry_event_credit_enquiry_event_proto_init() }
+func file_proto_credit_enquiry_event_credit_enquiry_event_proto_init() {
+	if File_proto_credit_enquiry_event_credit_enquiry_event_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_credit_enquiry_event_proto_rawDesc), len(file_proto_credit_enquiry_event_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDesc), len(file_proto_credit_enquiry_event_credit_enquiry_event_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   2,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
-		GoTypes:           file_proto_credit_enquiry_event_proto_goTypes,
-		DependencyIndexes: file_proto_credit_enquiry_event_proto_depIdxs,
-		MessageInfos:      file_proto_credit_enquiry_event_proto_msgTypes,
+		GoTypes:           file_proto_credit_enquiry_event_credit_enquiry_event_proto_goTypes,
+		DependencyIndexes: file_proto_credit_enquiry_event_credit_enquiry_event_proto_depIdxs,
+		MessageInfos:      file_proto_credit_enquiry_event_credit_enquiry_event_proto_msgTypes,
 	}.Build()
-	File_proto_credit_enquiry_event_proto = out.File
-	file_proto_credit_enquiry_event_proto_goTypes = nil
-	file_proto_credit_enquiry_event_proto_depIdxs = nil
+	File_proto_credit_enquiry_event_credit_enquiry_event_proto = out.File
+	file_proto_credit_enquiry_event_credit_enquiry_event_proto_goTypes = nil
+	file_proto_credit_enquiry_event_credit_enquiry_event_proto_depIdxs = nil
 }
