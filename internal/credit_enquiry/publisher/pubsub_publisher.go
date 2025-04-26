@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 	creditEnquiryEventProto "go-loan-service-v3/proto/credit_enquiry_event"
 
 	"cloud.google.com/go/pubsub"

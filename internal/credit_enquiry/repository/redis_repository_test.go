@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/entity"
-	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 
 	"github.com/alicebob/miniredis/v2"
 	"github.com/go-redis/redis/v8"

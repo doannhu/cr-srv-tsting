@@ -9,7 +9,7 @@ import (
 
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	cerrors "go-loan-service-v3/internal/credit_enquiry/errors"
-	pb "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 	productAssessmentPb "go-loan-service-v3/proto/product_assessment"
 	sopPb "go-loan-service-v3/proto/sop"
 
@@ -23,7 +23,7 @@ type mockValidator struct {
 	mock.Mock
 }
 
-func (m *mockValidator) ValidateRequest(request *pb.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
+func (m *mockValidator) ValidateRequest(request *creditEnquiryProto.CreditEnquiryRequest) (*cerrors.ValidationResponse, error) {
 	args := m.Called(request)
 	return args.Get(0).(*cerrors.ValidationResponse), args.Error(1)
 }
@@ -32,37 +32,37 @@ type mockRedisRepository struct {
 	mock.Mock
 }
 
-func (m *mockRedisRepository) SaveCreditEnquiry(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+func (m *mockRedisRepository) SaveCreditEnquiry(ctx context.Context, request *creditEnquiryProto.CreditEnquiryRequest) error {
 	args := m.Called(ctx, request)
 	return args.Error(0)
 }
 
-func (m *mockRedisRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
+func (m *mockRedisRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*creditEnquiryProto.CreditEnquiryRequest, error) {
 	args := m.Called(ctx, requestID, version)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*pb.CreditEnquiryRequest), args.Error(1)
+	return args.Get(0).(*creditEnquiryProto.CreditEnquiryRequest), args.Error(1)
 }
 
 type mockSpannerRepository struct {
 	mock.Mock
 }
 
-func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+func (m *mockSpannerRepository) SaveCreditEnquiry(ctx context.Context, request *creditEnquiryProto.CreditEnquiryRequest) error {
 	args := m.Called(ctx, request)
 	return args.Error(0)
 }
 
-func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*pb.CreditEnquiryRequest, error) {
+func (m *mockSpannerRepository) GetCreditEnquiry(ctx context.Context, requestID string, version string) (*creditEnquiryProto.CreditEnquiryRequest, error) {
 	args := m.Called(ctx, requestID, version)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*pb.CreditEnquiryRequest), args.Error(1)
+	return args.Get(0).(*creditEnquiryProto.CreditEnquiryRequest), args.Error(1)
 }
 
-func (m *mockSpannerRepository) SaveRequest(req *pb.CreditEnquiryRequest) error {
+func (m *mockSpannerRepository) SaveRequest(req *creditEnquiryProto.CreditEnquiryRequest) error {
 	args := m.Called(req)
 	return args.Error(0)
 }
@@ -88,7 +88,7 @@ type mockPublisher struct {
 	mock.Mock
 }
 
-func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, request *pb.CreditEnquiryRequest) error {
+func (m *mockPublisher) PublishCreditEnquiryEvent(ctx context.Context, request *creditEnquiryProto.CreditEnquiryRequest) error {
 	args := m.Called(ctx, request)
 	return args.Error(0)
 }
@@ -145,7 +145,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 
 	tests := []struct {
 		name        string
-		request     *pb.CreditEnquiryRequest
+		request     *creditEnquiryProto.CreditEnquiryRequest
 		setupMocks  func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository)
 		wantErr     bool
 		wantSuccess bool
@@ -154,7 +154,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 	}{
 		{
 			name: "valid request - successful processing",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId:                        validUUIDBytes,
 				EnquiryState:                     "NEW",
 				ApplicationNumber:                "APP123",
@@ -216,7 +216,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "empty request ID",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: []byte{},
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -229,7 +229,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "invalid UUID length",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: []byte("invalid-uuid"),
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -242,7 +242,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "validation failure",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -257,7 +257,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "validation internal error",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -272,7 +272,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "redis storage failure",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -289,7 +289,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "spanner storage failure",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {
@@ -308,7 +308,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 		},
 		{
 			name: "publisher failure - request still succeeds",
-			request: &pb.CreditEnquiryRequest{
+			request: &creditEnquiryProto.CreditEnquiryRequest{
 				RequestId: validUUIDBytes,
 			},
 			setupMocks: func() (*mockValidator, *mockRedisRepository, *mockSpannerRepository, *mockPublisher, *mockSopRepository, *mockSOPService, *mockProductAssessmentService, *mockProductAssessmentRepository) {

@@ -19,7 +19,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	pb "go-loan-service-v3/proto"
+	pb "go-loan-service-v3/proto/credit_enquiry"
 )
 
 type SpannerTestSuite struct {

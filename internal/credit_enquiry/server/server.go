@@ -11,7 +11,7 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	"go-loan-service-v3/internal/credit_enquiry/service/sop"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
-	pb "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 	productAssessmentPb "go-loan-service-v3/proto/product_assessment"
 	sopPb "go-loan-service-v3/proto/sop"
 
@@ -21,7 +21,7 @@ import (
 
 // CreditEnquiryServer implements the gRPC service for credit enquiries
 type CreditEnquiryServer struct {
-	pb.UnimplementedCreditEnquiryServiceServer
+	creditEnquiryProto.UnimplementedCreditEnquiryServiceServer
 	logger                   *log.Logger
 	validator                interfaces.Validator
 	redisRepo                interfaces.RequestCacheRepository
@@ -59,13 +59,13 @@ func NewServer(
 }
 
 // ProcessCreditEnquiry handles incoming credit enquiry requests
-func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.CreditEnquiryRequest) (*pb.CreditEnquiryResponse, error) {
+func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *creditEnquiryProto.CreditEnquiryRequest) (*creditEnquiryProto.CreditEnquiryResponse, error) {
 	s.logger.Printf("Processing credit enquiry request: %+v", req)
 
 	// Validate UUID
 	if len(req.RequestId) == 0 {
 		s.logger.Printf("Validation error: request_id is required")
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "request_id is required",
 			Code:    errors.ErrBadRequest,
@@ -73,7 +73,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	}
 	if len(req.RequestId) != 16 {
 		s.logger.Printf("Validation error: invalid UUID length")
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "invalid UUID length",
 			Code:    errors.ErrBadRequest,
@@ -81,7 +81,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	}
 	if _, err := uuid.FromBytes(req.RequestId); err != nil {
 		s.logger.Printf("Validation error: invalid UUID format")
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "invalid UUID format",
 			Code:    errors.ErrBadRequest,
@@ -92,7 +92,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	validationResp, err := s.validator.ValidateRequest(req)
 	if err != nil {
 		s.logger.Printf("Validation error: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Internal validation error",
 			Code:    errors.ErrInternalError,
@@ -101,7 +101,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 
 	if !validationResp.Success {
 		s.logger.Printf("Validation failed: %+v", validationResp.Error)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: validationResp.Error.Message,
 			Code:    validationResp.Error.Code,
@@ -111,7 +111,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	// Save the request to cache
 	if err := s.redisRepo.SaveCreditEnquiry(ctx, req); err != nil {
 		s.logger.Printf("Failed to save to Redis: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to save request to cache",
 			Code:    errors.ErrStorageError,
@@ -131,7 +131,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 
 	if err := utils.Retry(ctx, retryConfig, "save credit enquiry to spanner", spannerOperation); err != nil {
 		s.logger.Printf("Failed to save to Spanner: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to save request to database",
 			Code:    errors.ErrStorageError,
@@ -147,7 +147,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	sopResponse, err := s.sopService.GetConsolidatedSOP(ctx, sopRequest)
 	if err != nil {
 		s.logger.Printf("Failed to get SOP data: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to get SOP data",
 			Code:    errors.ErrServiceError,
@@ -172,7 +172,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 
 	if err := utils.Retry(ctx, retryConfig, "save sop to spanner", sopOperation); err != nil {
 		s.logger.Printf("Failed to save SOP to Spanner: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to save SOP to database",
 			Code:    errors.ErrStorageError,
@@ -188,7 +188,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	productRateResponse, err := s.productAssessmentService.GetProductRate(ctx, productRateRequest)
 	if err != nil {
 		s.logger.Printf("Failed to get product rate: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to get product rate",
 			Code:    errors.ErrServiceError,
@@ -210,7 +210,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 
 	if err := s.productAssessmentRepo.SaveProductAssessment(ctx, productAssessment); err != nil {
 		s.logger.Printf("Failed to save product assessment: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: false,
 			Message: "Failed to save product assessment",
 			Code:    errors.ErrStorageError,
@@ -220,14 +220,14 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	// Publish the event
 	if err := s.publisher.PublishCreditEnquiryEvent(ctx, req); err != nil {
 		s.logger.Printf("Failed to publish event: %v", err)
-		return &pb.CreditEnquiryResponse{
+		return &creditEnquiryProto.CreditEnquiryResponse{
 			Success: true,
 			Message: "Credit enquiry request processed successfully, but event publishing failed",
 			Code:    errors.ErrPublishError,
 		}, nil
 	}
 
-	return &pb.CreditEnquiryResponse{
+	return &creditEnquiryProto.CreditEnquiryResponse{
 		Success: true,
 		Message: "Credit enquiry processed successfully",
 		Code:    "",
@@ -264,7 +264,7 @@ func StartServer(
 		productAssessmentService,
 		productAssessmentRepo,
 	)
-	pb.RegisterCreditEnquiryServiceServer(grpcServer, server)
+	creditEnquiryProto.RegisterCreditEnquiryServiceServer(grpcServer, server)
 
 	log.Printf("Starting gRPC server on port %s", port)
 	return grpcServer.Serve(lis)

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"go-loan-service-v3/internal/credit_enquiry/errors"
-	"go-loan-service-v3/proto"
+	proto "go-loan-service-v3/proto/credit_enquiry"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"

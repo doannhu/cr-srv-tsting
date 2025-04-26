@@ -2,10 +2,10 @@ package interfaces
 
 import (
 	"go-loan-service-v3/internal/credit_enquiry/errors"
-	"go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 )
 
 // Validator interface defines the contract for request validation
 type Validator interface {
-	ValidateRequest(request *proto.CreditEnquiryRequest) (*errors.ValidationResponse, error)
+	ValidateRequest(request *creditEnquiryProto.CreditEnquiryRequest) (*errors.ValidationResponse, error)
 }

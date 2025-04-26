@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: proto/credit_enquiry.proto
+// source: proto/credit_enquiry/credit_enquiry.proto
 
 package proto
 
@@ -117,5 +117,5 @@ var CreditEnquiryService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/credit_enquiry.proto",
+	Metadata: "proto/credit_enquiry/credit_enquiry.proto",
 }

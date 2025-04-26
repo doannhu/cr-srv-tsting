@@ -9,7 +9,7 @@ import (
 
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"

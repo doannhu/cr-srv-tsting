@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	pb "go-loan-service-v3/proto"
+	pb "go-loan-service-v3/proto/credit_enquiry"
 
 	"github.com/go-redis/redis/v8"
 	"github.com/google/uuid"

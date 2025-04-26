@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	creditEnquiryProto "go-loan-service-v3/proto"
+	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 
 	"cloud.google.com/go/spanner"
 	"google.golang.org/api/iterator"
