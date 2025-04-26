@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.5.1
 // - protoc             v5.29.3
-// source: proto/product_assessment.proto
+// source: proto/product_assessment/product_assessment.proto
 
-package proto
+package product_assessment
 
 import (
 	context "context"
@@ -124,5 +124,5 @@ var ProductAssessmentService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "proto/product_assessment.proto",
+	Metadata: "proto/product_assessment/product_assessment.proto",
 }

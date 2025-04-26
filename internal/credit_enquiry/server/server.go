@@ -12,6 +12,7 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/service/sop"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
 	pb "go-loan-service-v3/proto"
+	productAssessmentPb "go-loan-service-v3/proto/product_assessment"
 	sopPb "go-loan-service-v3/proto/sop"
 
 	"github.com/google/uuid"
@@ -179,7 +180,7 @@ func (s *CreditEnquiryServer) ProcessCreditEnquiry(ctx context.Context, req *pb.
 	}
 
 	// Create and save product assessment
-	productRateRequest := &pb.ProductRateRequest{
+	productRateRequest := &productAssessmentPb.ProductRateRequest{
 		ProductCode: req.ProductCode,
 		ProductName: req.ProductName,
 	}

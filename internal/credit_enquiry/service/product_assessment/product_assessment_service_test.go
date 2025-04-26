@@ -7,23 +7,24 @@ import (
 	"time"
 
 	"go-loan-service-v3/internal/credit_enquiry/utils"
-	"go-loan-service-v3/proto"
+	pb "go-loan-service-v3/proto/product_assessment"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/grpc"
 )
 
-// MockProductService is a mock implementation of the product service
-type MockProductService struct {
+// MockProductAssessmentServiceClient is a mock implementation of pb.ProductAssessmentServiceClient
+type MockProductAssessmentServiceClient struct {
 	mock.Mock
 }
 
-func (m *MockProductService) GetProductRate(ctx context.Context, request *proto.ProductRateRequest) (*proto.ProductRateResponse, error) {
-	args := m.Called(ctx, request)
+func (m *MockProductAssessmentServiceClient) GetProductRate(ctx context.Context, request *pb.ProductRateRequest, opts ...grpc.CallOption) (*pb.ProductRateResponse, error) {
+	args := m.Called(ctx, request, opts)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*proto.ProductRateResponse), args.Error(1)
+	return args.Get(0).(*pb.ProductRateResponse), args.Error(1)
 }
 
 func TestProductAssessmentService_GetProductRate(t *testing.T) {
@@ -34,53 +35,97 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	request := &proto.ProductRateRequest{
+	request := &pb.ProductRateRequest{
 		ProductCode: "PROD001",
 		ProductName: "Test Product",
 	}
 
 	t.Run("successful get", func(t *testing.T) {
-		mockProductService := new(MockProductService)
-		expectedResponse := &proto.ProductRateResponse{
-			InitialStructureIndexRate: 5,
+		mockClient := new(MockProductAssessmentServiceClient)
+		expectedResponse := &pb.ProductRateResponse{
+			InitialStructureIndexRate: 500,
 		}
-		mockProductService.On("GetProductRate", ctx, request).Return(expectedResponse, nil)
+		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(expectedResponse, nil)
 
-		service := NewProductAssessmentService(retryConfig)
+		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
+		service.client = mockClient
+
 		response, err := service.GetProductRate(ctx, request)
+
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
 		assert.Equal(t, expectedResponse.InitialStructureIndexRate, response.InitialStructureIndexRate)
-		mockProductService.AssertExpectations(t)
+		mockClient.AssertExpectations(t)
 	})
 
-	t.Run("error from product service", func(t *testing.T) {
-		mockProductService := new(MockProductService)
-		expectedErr := errors.New("product service error")
-		mockProductService.On("GetProductRate", ctx, request).Return(nil, expectedErr)
+	t.Run("nil request", func(t *testing.T) {
+		service := NewProductAssessmentService(retryConfig, nil)
+		response, err := service.GetProductRate(ctx, nil)
 
-		service := NewProductAssessmentService(retryConfig)
+		assert.Error(t, err)
+		assert.Nil(t, response)
+		assert.Contains(t, err.Error(), "request cannot be nil")
+	})
+
+	t.Run("service error", func(t *testing.T) {
+		mockClient := new(MockProductAssessmentServiceClient)
+		expectedErr := errors.New("service error")
+		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(nil, expectedErr)
+
+		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
+		service.client = mockClient
+
 		response, err := service.GetProductRate(ctx, request)
+
 		assert.Error(t, err)
 		assert.Nil(t, response)
 		assert.Contains(t, err.Error(), "failed to get product rate")
-		mockProductService.AssertExpectations(t)
+		mockClient.AssertExpectations(t)
 	})
 
 	t.Run("retry on error", func(t *testing.T) {
-		mockProductService := new(MockProductService)
-		expectedResponse := &proto.ProductRateResponse{
-			InitialStructureIndexRate: 5,
+		mockClient := new(MockProductAssessmentServiceClient)
+		expectedResponse := &pb.ProductRateResponse{
+			InitialStructureIndexRate: 500,
 		}
 		// First call fails, second call succeeds
-		mockProductService.On("GetProductRate", ctx, request).Return(nil, errors.New("temporary error")).Once()
-		mockProductService.On("GetProductRate", ctx, request).Return(expectedResponse, nil).Once()
+		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(nil, errors.New("temporary error")).Once()
+		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(expectedResponse, nil).Once()
 
-		service := NewProductAssessmentService(retryConfig)
+		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
+		service.client = mockClient
+
 		response, err := service.GetProductRate(ctx, request)
+
 		assert.NoError(t, err)
 		assert.NotNil(t, response)
 		assert.Equal(t, expectedResponse.InitialStructureIndexRate, response.InitialStructureIndexRate)
-		mockProductService.AssertExpectations(t)
+		mockClient.AssertExpectations(t)
+	})
+
+	t.Run("empty product code uses default", func(t *testing.T) {
+		mockClient := new(MockProductAssessmentServiceClient)
+		emptyRequest := &pb.ProductRateRequest{
+			ProductCode: "",
+			ProductName: "Test Product",
+		}
+		expectedRequest := &pb.ProductRateRequest{
+			ProductCode: defaultProductCode,
+			ProductName: "Test Product",
+		}
+		expectedResponse := &pb.ProductRateResponse{
+			InitialStructureIndexRate: 500,
+		}
+		mockClient.On("GetProductRate", ctx, expectedRequest, mock.Anything).Return(expectedResponse, nil)
+
+		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
+		service.client = mockClient
+
+		response, err := service.GetProductRate(ctx, emptyRequest)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, response)
+		assert.Equal(t, expectedResponse.InitialStructureIndexRate, response.InitialStructureIndexRate)
+		mockClient.AssertExpectations(t)
 	})
 }

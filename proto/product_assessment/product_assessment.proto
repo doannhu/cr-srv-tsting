@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "go-loan-service-v3/proto/product_assessment";
+
+// ProductRateRequest represents the request to get product rate
+message ProductRateRequest {
+    string product_code = 1;
+    string product_name = 2;
+}
+
+// ProductRateResponse represents the response from product service
+message ProductRateResponse {
+    int64 initial_structure_index_rate = 1;
+}
+
+// ProductAssessmentService defines the service for product assessment
+service ProductAssessmentService {
+    // GetProductRate retrieves the product rate from product service
+    rpc GetProductRate(ProductRateRequest) returns (ProductRateResponse) {}
+} 

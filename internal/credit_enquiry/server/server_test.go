@@ -10,6 +10,7 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	cerrors "go-loan-service-v3/internal/credit_enquiry/errors"
 	pb "go-loan-service-v3/proto"
+	productAssessmentPb "go-loan-service-v3/proto/product_assessment"
 	sopPb "go-loan-service-v3/proto/sop"
 
 	"github.com/google/uuid"
@@ -108,12 +109,12 @@ type mockProductAssessmentService struct {
 	mock.Mock
 }
 
-func (m *mockProductAssessmentService) GetProductRate(ctx context.Context, request *pb.ProductRateRequest) (*pb.ProductRateResponse, error) {
+func (m *mockProductAssessmentService) GetProductRate(ctx context.Context, request *productAssessmentPb.ProductRateRequest) (*productAssessmentPb.ProductRateResponse, error) {
 	args := m.Called(ctx, request)
 	if args.Get(0) == nil {
 		return nil, args.Error(1)
 	}
-	return args.Get(0).(*pb.ProductRateResponse), args.Error(1)
+	return args.Get(0).(*productAssessmentPb.ProductRateResponse), args.Error(1)
 }
 
 type mockProductAssessmentRepository struct {
@@ -196,7 +197,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 				sopRepo.On("SaveSop", mock.Anything, mock.Anything).Return(nil)
 
 				// Setup product assessment service mock
-				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&pb.ProductRateResponse{
+				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&productAssessmentPb.ProductRateResponse{
 					InitialStructureIndexRate: 5,
 				}, nil)
 
@@ -327,7 +328,7 @@ func TestCreditEnquiryServer_ProcessCreditEnquiry(t *testing.T) {
 					ServiceabilityAssessmentId: "test-serviceability-id",
 				}, nil)
 				productAssessmentService := &mockProductAssessmentService{}
-				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&pb.ProductRateResponse{
+				productAssessmentService.On("GetProductRate", mock.Anything, mock.Anything).Return(&productAssessmentPb.ProductRateResponse{
 					InitialStructureIndexRate: 5,
 				}, nil)
 				productAssessmentRepo := &mockProductAssessmentRepository{}
