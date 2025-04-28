@@ -1,4 +1,4 @@
-package repository
+package credit_enquiry
 
 import (
 	"context"
