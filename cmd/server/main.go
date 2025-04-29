@@ -21,6 +21,9 @@ import (
 
 	tlsSecurityConfig "go-loan-service-v3/internal/config/security"
 
+	productAssessmentRepo "go-loan-service-v3/internal/credit_enquiry/repository/product_assessment"
+	productAssessmentService "go-loan-service-v3/internal/credit_enquiry/service/product_assessment"
+
 	"cloud.google.com/go/spanner"
 )
 
@@ -63,6 +66,22 @@ func main() {
 		MaxDelay:    1 * time.Second,
 	}
 
+	// Initialize Product Assessment repository
+	productAssessmentRepository := productAssessmentRepo.NewSpannerProductAssessmentRepository(spannerClient)
+
+	// Create a gRPC connection to the product assessment service
+	productAssessmentConn, err := grpc.Dial(
+		os.Getenv("PRODUCT_ASSESSMENT_SERVICE_ADDR"),
+		grpc.WithInsecure(), // Use TLS in production!
+	)
+	if err != nil {
+		log.Fatalf("Failed to connect to Product Assessment service: %v", err)
+	}
+	defer productAssessmentConn.Close()
+
+	// Initialize Product Assessment service
+	productAssessmentSvc := productAssessmentService.NewProductAssessmentService(retryConfig, productAssessmentConn)
+
 	tlsConfig := &tlsSecurityConfig.TLSConfig{
 		CertFile:   os.Getenv("SOP_CLIENT_CERT_FILE"),
 		KeyFile:    os.Getenv("SOP_CLIENT_KEY_FILE"),
@@ -90,8 +109,8 @@ func main() {
 		sopRepository,
 		nil, // TODO: implement publisher
 		sopSvc,
-		nil, // TODO: implement product assessment service
-		nil, // TODO: implement product assessment repository
+		productAssessmentSvc,
+		productAssessmentRepository,
 	)
 
 	creditEnquiryProto.RegisterCreditEnquiryServiceServer(s, creditEnquiryServer)
