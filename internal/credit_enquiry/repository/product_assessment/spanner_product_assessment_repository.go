@@ -49,10 +49,12 @@ func (r *SpannerProductAssessmentRepository) SaveProductAssessment(ctx context.C
 			"credit_enquiry_version",
 			"product_code",
 			"product_name",
+			"product_type",
 			"loan_amount",
 			"loan_purpose",
 			"initial_structure_term_month",
 			"initial_structure_index_rate",
+			"initial_structure_repayment_type",
 			"created_at",
 			"updated_at",
 		},
@@ -63,10 +65,12 @@ func (r *SpannerProductAssessmentRepository) SaveProductAssessment(ctx context.C
 			assessment.CreditEnquiryVersion,
 			assessment.ProductCode,
 			assessment.ProductName,
+			string(assessment.ProductType),
 			loanAmountNumeric,
 			assessment.LoanPurpose,
 			assessment.InitialStructureTermMonth,
 			assessment.InitialStructureIndexRate,
+			string(assessment.InitialStructureRepaymentType),
 			assessment.CreatedAt,
 			assessment.UpdatedAt,
 		},
@@ -90,10 +94,12 @@ func (r *SpannerProductAssessmentRepository) GetProductAssessment(ctx context.Co
 			credit_enquiry_version,
 			product_code,
 			product_name,
+			product_type,
 			CAST(loan_amount AS FLOAT64) as loan_amount,
 			loan_purpose,
 			initial_structure_term_month,
 			initial_structure_index_rate,
+			initial_structure_repayment_type,
 			created_at,
 			updated_at
 		FROM product_assessment
@@ -107,6 +113,8 @@ func (r *SpannerProductAssessmentRepository) GetProductAssessment(ctx context.Co
 	}
 
 	var assessment entity.ProductAssessment
+	var productType, repaymentType string
+
 	iter := r.client.Single().Query(ctx, stmt)
 	defer iter.Stop()
 
@@ -125,16 +133,21 @@ func (r *SpannerProductAssessmentRepository) GetProductAssessment(ctx context.Co
 		&assessment.CreditEnquiryVersion,
 		&assessment.ProductCode,
 		&assessment.ProductName,
+		&productType,
 		&assessment.LoanAmount,
 		&assessment.LoanPurpose,
 		&assessment.InitialStructureTermMonth,
 		&assessment.InitialStructureIndexRate,
+		&repaymentType,
 		&assessment.CreatedAt,
 		&assessment.UpdatedAt,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan product assessment: %w", err)
 	}
+
+	assessment.ProductType = entity.ProductType(productType)
+	assessment.InitialStructureRepaymentType = entity.InitialStructureRepaymentType(repaymentType)
 
 	return &assessment, nil
 }

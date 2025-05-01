@@ -9,12 +9,14 @@ import (
 	"cloud.google.com/go/spanner"
 	database "cloud.google.com/go/spanner/admin/database/apiv1"
 	instance "cloud.google.com/go/spanner/admin/instance/apiv1"
+
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"google.golang.org/api/option"
-	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	instancepb "google.golang.org/genproto/googleapis/spanner/admin/instance/v1"
+
+	databasepb "google.golang.org/genproto/googleapis/spanner/admin/database/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
@@ -107,10 +109,12 @@ func (s *SpannerProductAssessmentTestSuite) SetupSuite() {
 				credit_enquiry_version STRING(50) NOT NULL,
 				product_code STRING(20),
 				product_name STRING(250),
+				product_type STRING(20),
 				loan_amount NUMERIC,
 				loan_purpose STRING(50),
 				initial_structure_term_month INT64,
 				initial_structure_index_rate INT64,
+				initial_structure_repayment_type STRING(50),
 				created_at TIMESTAMP,
 				updated_at TIMESTAMP,
 			) PRIMARY KEY (product_assessment_id)`,
@@ -147,16 +151,18 @@ func (s *SpannerProductAssessmentTestSuite) TearDownSuite() {
 func (s *SpannerProductAssessmentTestSuite) TestSaveProductAssessment() {
 	ctx := context.Background()
 	assessment := &entity.ProductAssessment{
-		ProductAssessmentID:        "test-assessment-id",
-		ServiceabilityAssessmentID: "test-serviceability-id",
-		CreditEnquiryID:            "test-credit-enquiry-id",
-		CreditEnquiryVersion:       "1.0",
-		ProductCode:                "PROD001",
-		ProductName:                "Test Product",
-		LoanAmount:                 100000,
-		LoanPurpose:                "Home Purchase",
-		InitialStructureTermMonth:  360,
-		InitialStructureIndexRate:  5,
+		ProductAssessmentID:           "test-assessment-id",
+		ServiceabilityAssessmentID:    "test-serviceability-id",
+		CreditEnquiryID:               "test-credit-enquiry-id",
+		CreditEnquiryVersion:          "1.0",
+		ProductCode:                   "PROD001",
+		ProductName:                   "Test Product",
+		ProductType:                   entity.ProductTypeOwner,
+		LoanAmount:                    100000,
+		LoanPurpose:                   "Home Purchase",
+		InitialStructureTermMonth:     360,
+		InitialStructureIndexRate:     5,
+		InitialStructureRepaymentType: entity.RepaymentTypePrincipalAndInterest,
 	}
 
 	// Test saving
@@ -186,25 +192,29 @@ func (s *SpannerProductAssessmentTestSuite) TestSaveProductAssessment() {
 	s.Require().NotNil(retrieved)
 	s.Equal(assessment.ProductCode, retrieved.ProductCode)
 	s.Equal(assessment.ProductName, retrieved.ProductName)
+	s.Equal(assessment.ProductType, retrieved.ProductType)
 	s.Equal(assessment.LoanAmount, retrieved.LoanAmount)
 	s.Equal(assessment.LoanPurpose, retrieved.LoanPurpose)
 	s.Equal(assessment.InitialStructureTermMonth, retrieved.InitialStructureTermMonth)
 	s.Equal(assessment.InitialStructureIndexRate, retrieved.InitialStructureIndexRate)
+	s.Equal(assessment.InitialStructureRepaymentType, retrieved.InitialStructureRepaymentType)
 }
 
 func (s *SpannerProductAssessmentTestSuite) TestGetProductAssessment() {
 	ctx := context.Background()
 	assessment := &entity.ProductAssessment{
-		ProductAssessmentID:        "existing-assessment-id",
-		ServiceabilityAssessmentID: "existing-serviceability-id",
-		CreditEnquiryID:            "existing-credit-enquiry-id",
-		CreditEnquiryVersion:       "1.0",
-		ProductCode:                "PROD002",
-		ProductName:                "Existing Product",
-		LoanAmount:                 200000,
-		LoanPurpose:                "Home Purchase",
-		InitialStructureTermMonth:  360,
-		InitialStructureIndexRate:  6,
+		ProductAssessmentID:           "existing-assessment-id",
+		ServiceabilityAssessmentID:    "existing-serviceability-id",
+		CreditEnquiryID:               "existing-credit-enquiry-id",
+		CreditEnquiryVersion:          "1.0",
+		ProductCode:                   "PROD002",
+		ProductName:                   "Existing Product",
+		ProductType:                   entity.ProductTypeInvester,
+		LoanAmount:                    200000,
+		LoanPurpose:                   "Investment",
+		InitialStructureTermMonth:     240,
+		InitialStructureIndexRate:     6,
+		InitialStructureRepaymentType: entity.RepaymentTypeInterestOnly,
 	}
 
 	// Save test data
@@ -217,10 +227,12 @@ func (s *SpannerProductAssessmentTestSuite) TestGetProductAssessment() {
 	s.Require().NotNil(retrieved)
 	s.Equal(assessment.ProductCode, retrieved.ProductCode)
 	s.Equal(assessment.ProductName, retrieved.ProductName)
+	s.Equal(assessment.ProductType, retrieved.ProductType)
 	s.Equal(assessment.LoanAmount, retrieved.LoanAmount)
 	s.Equal(assessment.LoanPurpose, retrieved.LoanPurpose)
 	s.Equal(assessment.InitialStructureTermMonth, retrieved.InitialStructureTermMonth)
 	s.Equal(assessment.InitialStructureIndexRate, retrieved.InitialStructureIndexRate)
+	s.Equal(assessment.InitialStructureRepaymentType, retrieved.InitialStructureRepaymentType)
 }
 
 func (s *SpannerProductAssessmentTestSuite) TestGetProductAssessmentNotFound() {
