@@ -3,7 +3,6 @@ package product_assessment
 import (
 	"context"
 	"fmt"
-	"time"
 
 	tlsSecurityConfig "go-loan-service-v3/internal/config/security"
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
@@ -15,14 +14,9 @@ import (
 	"google.golang.org/grpc/credentials"
 )
 
-const (
-	defaultProductCode = "HLV"
-)
-
-// productAssessmentService implements interfaces.ProductAssessmentService
-type productAssessmentService struct {
-	retryConfig *utils.RetryConfig
-	client      pb.ProductAssessmentServiceClient
+// StandardService implements interfaces.ProductAssessmentService using standard TLS
+type StandardService struct {
+	*BaseService
 }
 
 // NewProductAssessmentClient creates a new ProductAssessmentService client with TLS
@@ -40,7 +34,7 @@ func NewProductAssessmentClient(ctx context.Context, addr string, tlsConfig *tls
 		return nil, fmt.Errorf("TLS configuration is required")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, DialTimeout)
 	defer cancel()
 
 	conn, err := grpc.DialContext(ctx, addr,
@@ -56,40 +50,37 @@ func NewProductAssessmentClient(ctx context.Context, addr string, tlsConfig *tls
 		return nil, fmt.Errorf("connection not ready: %v", conn.GetState())
 	}
 
-	return &productAssessmentService{
-		retryConfig: retryConfig,
-		client:      pb.NewProductAssessmentServiceClient(conn),
-	}, nil
+	client := pb.NewProductAssessmentServiceClient(conn)
+	base := NewBaseService(retryConfig, client)
+	return &StandardService{BaseService: base}, nil
 }
 
 // NewProductAssessmentService creates a new instance of interfaces.ProductAssessmentService from an existing connection
 func NewProductAssessmentService(retryConfig *utils.RetryConfig, conn *grpc.ClientConn) interfaces.ProductAssessmentService {
-	return &productAssessmentService{
-		retryConfig: retryConfig,
-		client:      pb.NewProductAssessmentServiceClient(conn),
-	}
+	client := pb.NewProductAssessmentServiceClient(conn)
+	base := NewBaseService(retryConfig, client)
+	return &StandardService{BaseService: base}
 }
 
 // GetProductRate implements interfaces.ProductAssessmentService
-func (s *productAssessmentService) GetProductRate(ctx context.Context, request *pb.ProductRateRequest) (*pb.ProductRateResponse, error) {
+func (s *StandardService) GetProductRate(ctx context.Context, request *pb.ProductRateRequest) (*pb.ProductRateResponse, error) {
 	if request == nil {
 		return nil, fmt.Errorf("request cannot be nil")
 	}
 
-	// Use default product code if empty
 	if request.ProductCode == "" {
-		request.ProductCode = defaultProductCode
+		request.ProductCode = DefaultProductCode
 	}
 
 	var response *pb.ProductRateResponse
 	var err error
 
 	operation := func() error {
-		response, err = s.client.GetProductRate(ctx, request)
+		response, err = s.Client.GetProductRate(ctx, request)
 		return err
 	}
 
-	if err := utils.Retry(ctx, s.retryConfig, "get product rate", operation); err != nil {
+	if err := utils.Retry(ctx, s.RetryConfig, "get product rate", operation); err != nil {
 		return nil, fmt.Errorf("failed to get product rate: %w", err)
 	}
 

@@ -59,8 +59,8 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 		}
 		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(expectedResponse, nil)
 
-		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
-		service.client = mockClient
+		base := NewBaseService(retryConfig, mockClient)
+		service := &productAssessmentService{BaseService: base}
 
 		response, err := service.GetProductRate(ctx, request)
 
@@ -71,7 +71,8 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 	})
 
 	t.Run("nil request", func(t *testing.T) {
-		service := NewProductAssessmentService(retryConfig, nil)
+		base := NewBaseService(retryConfig, nil)
+		service := &productAssessmentService{BaseService: base}
 		response, err := service.GetProductRate(ctx, nil)
 
 		assert.Error(t, err)
@@ -84,14 +85,14 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 		expectedErr := errors.New("service error")
 		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(nil, expectedErr)
 
-		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
-		service.client = mockClient
+		base := NewBaseService(retryConfig, mockClient)
+		service := &productAssessmentService{BaseService: base}
 
 		response, err := service.GetProductRate(ctx, request)
 
 		assert.Error(t, err)
 		assert.Nil(t, response)
-		assert.Contains(t, err.Error(), "failed to get product rate")
+		assert.Contains(t, err.Error(), "get product rate")
 		mockClient.AssertExpectations(t)
 	})
 
@@ -104,8 +105,8 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(nil, errors.New("temporary error")).Once()
 		mockClient.On("GetProductRate", ctx, request, mock.Anything).Return(expectedResponse, nil).Once()
 
-		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
-		service.client = mockClient
+		base := NewBaseService(retryConfig, mockClient)
+		service := &productAssessmentService{BaseService: base}
 
 		response, err := service.GetProductRate(ctx, request)
 
@@ -122,7 +123,7 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 			ProductName: "Test Product",
 		}
 		expectedRequest := &pb.ProductRateRequest{
-			ProductCode: defaultProductCode,
+			ProductCode: DefaultProductCode,
 			ProductName: "Test Product",
 		}
 		expectedResponse := &pb.ProductRateResponse{
@@ -130,8 +131,8 @@ func TestProductAssessmentService_GetProductRate(t *testing.T) {
 		}
 		mockClient.On("GetProductRate", ctx, expectedRequest, mock.Anything).Return(expectedResponse, nil)
 
-		service := NewProductAssessmentService(retryConfig, nil).(*productAssessmentService)
-		service.client = mockClient
+		base := NewBaseService(retryConfig, mockClient)
+		service := &productAssessmentService{BaseService: base}
 
 		response, err := service.GetProductRate(ctx, emptyRequest)
 
