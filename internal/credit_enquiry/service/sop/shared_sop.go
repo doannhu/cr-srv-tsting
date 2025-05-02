@@ -7,6 +7,9 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
 	pb "go-loan-service-v3/proto/sop"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type BaseService struct {
@@ -23,7 +26,7 @@ func NewBaseService(retryConfig *utils.RetryConfig, client pb.SOPServiceClient) 
 
 func (s *BaseService) GetConsolidatedSOP(ctx context.Context, request *pb.SOPRequest) (*pb.SOPResponse, error) {
 	if request == nil {
-		return nil, fmt.Errorf("request cannot be nil")
+		return nil, status.Error(codes.InvalidArgument, "request cannot be nil")
 	}
 
 	var response *pb.SOPResponse
