@@ -3,23 +3,18 @@ package sop
 import (
 	"context"
 	"fmt"
-	"time"
 
 	tlsSecurityConfig "go-loan-service-v3/internal/config/security"
+	"go-loan-service-v3/internal/credit_enquiry/interfaces"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
 	pb "go-loan-service-v3/proto/sop"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 )
-
-// SOPService defines the interface for SOP service operations
-type SOPService interface {
-	GetConsolidatedSOP(ctx context.Context, request *pb.SOPRequest) (*pb.SOPResponse, error)
-}
 
 // sopServiceClient implements the SOPService interface
 type sopServiceClient struct {
@@ -28,7 +23,7 @@ type sopServiceClient struct {
 }
 
 // NewSOPClient creates a new SOP service client with connection management
-func NewSOPClient(ctx context.Context, addr string, tlsConfig *tlsSecurityConfig.TLSConfig, retryConfig *utils.RetryConfig) (SOPService, error) {
+func NewSOPClient(ctx context.Context, addr string, tlsConfig *tlsSecurityConfig.TLSConfig, retryConfig *utils.RetryConfig) (interfaces.SOPService, error) {
 	var creds credentials.TransportCredentials
 	var err error
 
@@ -43,22 +38,21 @@ func NewSOPClient(ctx context.Context, addr string, tlsConfig *tlsSecurityConfig
 	}
 
 	// Create a timeout context for the connection
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	// defer cancel()
 
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(creds),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to SOP service: %v", err)
 	}
 
 	// Verify the connection state
-	if conn.GetState() != connectivity.Ready {
-		conn.Close()
-		return nil, fmt.Errorf("connection not ready: %v", conn.GetState())
-	}
+	// if conn.GetState() != connectivity.Ready {
+	// 	conn.Close()
+	// 	return nil, fmt.Errorf("connection not ready: %v", conn.GetState())
+	// }
 
 	return &sopServiceClient{
 		client:      pb.NewSOPServiceClient(conn),
@@ -67,7 +61,7 @@ func NewSOPClient(ctx context.Context, addr string, tlsConfig *tlsSecurityConfig
 }
 
 // NewSOPServiceClient creates a new SOP service client from an existing connection
-func NewSOPServiceClient(conn *grpc.ClientConn, retryConfig *utils.RetryConfig) SOPService {
+func NewSOPServiceClient(conn *grpc.ClientConn, retryConfig *utils.RetryConfig) interfaces.SOPService {
 	return &sopServiceClient{
 		client:      pb.NewSOPServiceClient(conn),
 		retryConfig: retryConfig,

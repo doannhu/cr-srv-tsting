@@ -9,7 +9,6 @@ import (
 	"go-loan-service-v3/internal/credit_enquiry/entity"
 	"go-loan-service-v3/internal/credit_enquiry/errors"
 	"go-loan-service-v3/internal/credit_enquiry/interfaces"
-	"go-loan-service-v3/internal/credit_enquiry/service/sop"
 	"go-loan-service-v3/internal/credit_enquiry/utils"
 	creditEnquiryProto "go-loan-service-v3/proto/credit_enquiry"
 	productAssessmentPb "go-loan-service-v3/proto/product_assessment"
@@ -28,7 +27,7 @@ type CreditEnquiryServer struct {
 	spannerRepo              interfaces.CreditEnquiryRepository
 	sopRepo                  interfaces.SopRepository
 	publisher                interfaces.CreditEnquiryPublisher
-	sopService               sop.SOPService
+	sopService               interfaces.SOPService
 	productAssessmentService interfaces.ProductAssessmentService
 	productAssessmentRepo    interfaces.ProductAssessmentRepository
 }
@@ -41,7 +40,7 @@ func NewServer(
 	spannerRepo interfaces.CreditEnquiryRepository,
 	sopRepo interfaces.SopRepository,
 	publisher interfaces.CreditEnquiryPublisher,
-	sopService sop.SOPService,
+	sopService interfaces.SOPService,
 	productAssessmentService interfaces.ProductAssessmentService,
 	productAssessmentRepo interfaces.ProductAssessmentRepository,
 ) *CreditEnquiryServer {
@@ -242,7 +241,7 @@ func StartServer(
 	spannerRepo interfaces.CreditEnquiryRepository,
 	sopRepo interfaces.SopRepository,
 	publisher interfaces.CreditEnquiryPublisher,
-	sopService sop.SOPService,
+	sopService interfaces.SOPService,
 	productAssessmentService interfaces.ProductAssessmentService,
 	productAssessmentRepo interfaces.ProductAssessmentRepository,
 ) error {

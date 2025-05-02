@@ -586,3 +586,107 @@ This approach ensures that:
 - Error details include specific field information
 - Validation rules are consistently applied
 - The response format is standardized 
+
+### Security Features
+
+#### TLS Support Options
+The service provides two different TLS implementation options for secure communication with the Product Assessment service:
+
+1. **Advanced TLS (Dynamic Certificate Management)**
+   ```go
+   // Using NewProductAssessmentClientAT for advanced TLS with certificate reloading
+   client, err := NewProductAssessmentClientAT(
+       context.Background(),
+       "service.example.com:443",
+       &TLSConfig{
+           CertFile:   "/path/to/client.crt",
+           KeyFile:    "/path/to/client.key",
+           CAFile:     "/path/to/ca.crt",
+           ServerName: "service.example.com",
+       },
+       retryConfig,
+   )
+   ```
+   - **Features:**
+     - Dynamic certificate reloading without service restart
+     - File-watching for certificate and key updates
+     - Automatic refresh on certificate changes
+     - Configurable refresh interval
+     - Suitable for environments requiring certificate rotation
+
+2. **Static TLS (Simple Configuration)**
+   ```go
+   // Using NewProductAssessmentClient for static TLS configuration
+   client, err := NewProductAssessmentClient(
+       context.Background(),
+       "service.example.com:443",
+       &tls.Config{
+           Certificates: []tls.Certificate{clientCert},
+           RootCAs:     certPool,
+       },
+       retryConfig,
+   )
+   ```
+   - **Features:**
+     - One-time TLS configuration setup
+     - Standard Go TLS configuration
+     - Simpler implementation
+     - Suitable for stable certificate environments
+     - Relies on service restart for certificate updates
+
+#### Choosing Between TLS Options
+
+1. **Use Advanced TLS When:**
+   - Certificates need frequent rotation
+   - Zero-downtime certificate updates are required
+   - Complex certificate management policies exist
+   - Running in environments with automated certificate management
+
+2. **Use Static TLS When:**
+   - Certificates are long-lived
+   - Simple setup is preferred
+   - Certificate updates can be handled by service restart
+   - Running in stable, controlled environments
+
+#### Implementation Details
+
+1. **Advanced TLS Implementation**
+   - Uses gRPC's `advancedtls` package
+   - Implements certificate providers for identity and CA bundles
+   - Supports custom verification logic
+   - Includes built-in certificate refresh mechanism
+   - Handles certificate rotation gracefully
+
+2. **Static TLS Implementation**
+   - Uses standard Go `crypto/tls` package
+   - Simple configuration with `tls.Config`
+   - Direct certificate and key loading
+   - Integrates with standard gRPC dial options
+   - Relies on retry mechanism for connection handling
+
+#### Security Considerations
+
+1. **Certificate Management**
+   - Both options support mutual TLS (mTLS)
+   - Proper certificate validation
+   - Secure private key handling
+   - Support for custom CA certificates
+
+2. **Connection Security**
+   - TLS 1.2+ support
+   - Strong cipher suite selection
+   - Certificate verification
+   - Protection against MITM attacks
+
+3. **Operational Security**
+   - Proper error handling
+   - Secure certificate storage
+   - Logging of security events
+   - Connection state monitoring
+
+4. **Security Benefits**
+   - Enhanced protection against MITM attacks
+   - Automatic handling of certificate expiration
+   - Zero-downtime certificate rotation
+   - Strict certificate validation
+   - Support for certificate revocation 

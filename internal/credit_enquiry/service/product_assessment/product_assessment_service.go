@@ -10,7 +10,7 @@ import (
 	pb "go-loan-service-v3/proto/product_assessment"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/connectivity"
+
 	"google.golang.org/grpc/credentials"
 )
 
@@ -34,21 +34,20 @@ func NewProductAssessmentClient(ctx context.Context, addr string, tlsConfig *tls
 		return nil, fmt.Errorf("TLS configuration is required")
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, DialTimeout)
-	defer cancel()
+	// ctx, cancel := context.WithTimeout(ctx, DialTimeout)
+	// defer cancel()
 
-	conn, err := grpc.DialContext(ctx, addr,
+	conn, err := grpc.NewClient(addr,
 		grpc.WithTransportCredentials(creds),
-		grpc.WithBlock(),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to Product Assessment service: %v", err)
 	}
 
-	if conn.GetState() != connectivity.Ready {
-		conn.Close()
-		return nil, fmt.Errorf("connection not ready: %v", conn.GetState())
-	}
+	// if conn.GetState() != connectivity.Ready {
+	// 	conn.Close()
+	// 	return nil, fmt.Errorf("connection not ready: %v", conn.GetState())
+	// }
 
 	client := pb.NewProductAssessmentServiceClient(conn)
 	base := NewBaseService(retryConfig, client)
